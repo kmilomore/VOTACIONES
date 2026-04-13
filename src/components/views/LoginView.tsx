@@ -1,3 +1,8 @@
+const inputClass =
+  'w-full h-11 px-3.5 rounded-xl border-[1.5px] border-slate-900/[0.14] bg-white text-ink font-sans text-[15px] transition-all duration-150 focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/15 placeholder:text-ink-muted/50';
+
+const labelClass = 'text-[11px] font-bold font-sans text-ink-mid uppercase tracking-wide';
+
 interface LoginViewProps {
   rutNumber: string;
   rutVerifier: string;
@@ -22,23 +27,30 @@ export function LoginView({
   onSubmit,
 }: LoginViewProps) {
   return (
-    <section className="panel">
-      <div className="panel__header">
-        <span className="step-chip">Paso 1 de 3 &mdash; Identificacion</span>
-        <h1 className="panel__title">Ingresa para votar</h1>
-        <p className="panel__description">
+    <section className="rounded-2xl bg-white/95 backdrop-blur-sm border border-slate-900/10 text-ink p-5">
+      <div className="mb-4 pb-4 border-b border-slate-900/[0.08]">
+        <span className="inline-flex items-center px-3 py-1 rounded-full bg-blue-50 border border-blue-200/70 text-brand-mid text-[11px] font-bold font-sans uppercase tracking-[0.04em]">
+          Paso 1 de 3 — Identificacion
+        </span>
+        <h1 className="mt-2.5 mb-0 font-serif text-[clamp(20px,2.6vw,28px)] text-ink leading-none tracking-tight">
+          Ingresa para votar
+        </h1>
+        <p className="mt-2 mb-0 text-sm text-ink-muted font-sans leading-relaxed">
           Ingresa tu RUT y correo institucional registrado en el padron del Consejo Local.
         </p>
         {/* TODO(backend-integration): remove demo hint before production */}
-        <p className="panel__hint">Demo: 12345678 &ndash; 9 &nbsp;|&nbsp; usuario@slep.cl</p>
+        <p className="inline-flex items-center gap-1.5 mt-3 mb-0 px-3 py-1.5 rounded-full bg-blue-50/60 border border-blue-100 text-brand-mid text-xs font-semibold font-sans">
+          <span className="opacity-60 text-[10px]">▸</span>
+          Demo: 12345678 – 9 | usuario@slep.cl
+        </p>
       </div>
 
-      <form className="form-grid" onSubmit={onSubmit}>
-        <div className="field">
-          <span className="field__label">RUT</span>
-          <div className="rut-group">
+      <form className="grid gap-3.5" onSubmit={onSubmit}>
+        <div className="grid gap-2">
+          <span className={labelClass}>RUT</span>
+          <div className="grid grid-cols-[1fr_auto_88px] gap-2 items-center">
             <input
-              className="field__input rut-group__number"
+              className={inputClass}
               type="text"
               inputMode="numeric"
               autoComplete="off"
@@ -47,9 +59,9 @@ export function LoginView({
               onChange={(event) => onRutNumberChange(event.target.value.replace(/\D/g, '').slice(0, 8))}
               required
             />
-            <span className="rut-group__separator">-</span>
+            <span className="text-[#36506c] text-xl font-bold select-none">–</span>
             <input
-              className="field__input rut-group__verifier"
+              className={`${inputClass} text-center uppercase`}
               type="text"
               inputMode="text"
               autoComplete="off"
@@ -61,10 +73,10 @@ export function LoginView({
           </div>
         </div>
 
-        <label className="field">
-          <span className="field__label">Correo electronico</span>
+        <label className="grid gap-2">
+          <span className={labelClass}>Correo electronico</span>
           <input
-            className="field__input"
+            className={inputClass}
             type="email"
             autoComplete="email"
             maxLength={254}
@@ -75,9 +87,17 @@ export function LoginView({
           />
         </label>
 
-        {errorMessage ? <p className="form-message form-message--error">{errorMessage}</p> : null}
+        {errorMessage ? (
+          <p className="m-0 px-3.5 py-2.5 rounded-xl text-[13px] font-sans font-medium text-red-600 bg-red-50 border border-red-200">
+            {errorMessage}
+          </p>
+        ) : null}
 
-        <button className="button button--primary" type="submit" disabled={isSubmitting}>
+        <button
+          className="inline-flex items-center justify-center w-full h-11 px-5 rounded-xl bg-brand text-white font-sans text-sm font-bold tracking-wide shadow-[0_4px_14px_rgba(11,66,120,0.36),inset_0_1px_0_rgba(255,255,255,0.12)] hover:bg-brand-mid hover:shadow-[0_6px_20px_rgba(11,66,120,0.44)] hover:-translate-y-px active:translate-y-0 disabled:opacity-45 disabled:cursor-not-allowed transition-all duration-150"
+          type="submit"
+          disabled={isSubmitting}
+        >
           {isSubmitting ? 'Validando…' : 'Continuar →'}
         </button>
       </form>

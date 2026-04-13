@@ -149,15 +149,28 @@ export default function HomePage() {
   }
 
   return (
-    <main className="shell">
-      <div className="shell__backdrop" />
-      <section className="shell__content">
-        <section className="stage-card">
-          <div className="stage-card__intro">
-            <p className="stage-card__eyebrow">Servicio Local de Educacion Publica</p>
-            <h2 className="stage-card__title">Portal de votacion del Consejo Local</h2>
+    <main className="relative min-h-screen overflow-hidden isolate font-serif">
+      {/* Background image */}
+      <div className="absolute inset-0 bg-portal" />
+      {/* Gradient overlay */}
+      <div className="absolute inset-0 bg-gradient-to-br from-[#062048]/85 via-[#082a54]/70 to-[#061836]/82" />
+
+      {/* Centered content */}
+      <section className="relative z-10 grid place-items-center min-h-screen max-w-[940px] mx-auto px-4 py-5">
+        {/* Stage card */}
+        <div className="w-full max-w-[560px] p-2.5 rounded-[20px] border border-white/20 bg-white/90 shadow-[0_24px_64px_rgba(6,18,38,0.36),0_4px_12px_rgba(6,18,38,0.14)] backdrop-blur-[22px] backdrop-saturate-150">
+
+          {/* Institutional intro band */}
+          <div className="relative mb-2 px-[18px] py-4 rounded-2xl overflow-hidden border border-white/10 bg-gradient-to-br from-brand-deep via-brand-mid to-brand">
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_80%_0%,rgba(255,255,255,0.06),transparent_55%)] pointer-events-none" />
+            <p className="relative m-0 mb-1.5 text-[10px] font-bold font-sans uppercase tracking-[0.16em] text-[rgba(200,220,255,0.88)]">
+              Servicio Local de Educacion Publica
+            </p>
+            <h2 className="relative m-0 font-serif text-[clamp(20px,2.8vw,30px)] text-white leading-none tracking-tight">
+              Portal de votacion del Consejo Local
+            </h2>
             {/* TODO(backend-integration): replace description with production copy, remove 'datos simulados' reference */}
-            <p className="stage-card__description">
+            <p className="relative mt-2 text-sm font-sans text-[rgba(210,228,255,0.82)] max-w-[48ch] leading-relaxed m-0">
               Una interfaz limpia para validar el flujo de acceso, autenticacion por OTP y emision de voto con datos simulados.
             </p>
           </div>
@@ -190,10 +203,10 @@ export default function HomePage() {
 
           {appState === 'vote' ? (
             isLoadingCandidates ? (
-              <section className="panel panel--loading">
-                <p className="panel__eyebrow">Cargando papeleta</p>
-                <h1 className="panel__title">Preparando candidaturas</h1>
-                <p className="panel__description">
+              <section className="rounded-2xl bg-white/95 border border-slate-900/10 text-ink p-5 min-h-[240px] grid content-start gap-2">
+                <p className="m-0 text-[10px] font-bold font-sans uppercase tracking-[0.16em] text-ink-muted">Cargando papeleta</p>
+                <h1 className="m-0 font-serif text-[clamp(20px,2.6vw,28px)] text-ink leading-none tracking-tight">Preparando candidaturas</h1>
+                <p className="m-0 text-sm text-ink-muted font-sans leading-relaxed">
                   Estamos organizando la informacion simulada antes de mostrar la votacion.
                 </p>
               </section>
@@ -223,7 +236,7 @@ export default function HomePage() {
               onRestart={handleRestart}
             />
           ) : null}
-        </section>
+        </div>
       </section>
     </main>
   );

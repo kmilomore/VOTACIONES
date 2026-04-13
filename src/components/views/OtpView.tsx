@@ -18,22 +18,29 @@ export function OtpView({
   onSubmit,
 }: OtpViewProps) {
   return (
-    <section className="panel">
-      <div className="panel__header">
-        <span className="step-chip">Paso 2 de 3 &mdash; Verificacion</span>
-        <h1 className="panel__title">Codigo de acceso</h1>
-        <p className="panel__description">
+    <section className="rounded-2xl bg-white/95 backdrop-blur-sm border border-slate-900/10 text-ink p-5">
+      <div className="mb-4 pb-4 border-b border-slate-900/[0.08]">
+        <span className="inline-flex items-center px-3 py-1 rounded-full bg-blue-50 border border-blue-200/70 text-brand-mid text-[11px] font-bold font-sans uppercase tracking-[0.04em]">
+          Paso 2 de 3 — Verificacion
+        </span>
+        <h1 className="mt-2.5 mb-0 font-serif text-[clamp(20px,2.6vw,28px)] text-ink leading-none tracking-tight">
+          Codigo de acceso
+        </h1>
+        <p className="mt-2 mb-0 text-sm text-ink-muted font-sans leading-relaxed">
           Enviamos un codigo de 6 digitos a <strong>{email}</strong>. Ingrésalo a continuacion.
         </p>
         {/* TODO(backend-integration): remove demo hint before production */}
-        <p className="panel__hint">Demo: codigo es 123456</p>
+        <p className="inline-flex items-center gap-1.5 mt-3 mb-0 px-3 py-1.5 rounded-full bg-blue-50/60 border border-blue-100 text-brand-mid text-xs font-semibold font-sans">
+          <span className="opacity-60 text-[10px]">▸</span>
+          Demo: codigo es 123456
+        </p>
       </div>
 
-      <form className="form-grid" onSubmit={onSubmit}>
-        <label className="field">
-          <span className="field__label">Codigo de 6 digitos</span>
+      <form className="grid gap-3.5" onSubmit={onSubmit}>
+        <label className="grid gap-2">
+          <span className="text-[11px] font-bold font-sans text-ink-mid uppercase tracking-wide">Codigo de 6 digitos</span>
           <input
-            className="field__input field__input--otp"
+            className="otp-input w-full h-12 px-3.5 rounded-xl border-[1.5px] border-slate-900/[0.14] bg-white text-ink font-sans transition-all duration-150 focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/15 placeholder:text-ink-muted/50"
             type="text"
             inputMode="numeric"
             autoComplete="one-time-code"
@@ -45,13 +52,26 @@ export function OtpView({
           />
         </label>
 
-        {errorMessage ? <p className="form-message form-message--error">{errorMessage}</p> : null}
+        {errorMessage ? (
+          <p className="m-0 px-3.5 py-2.5 rounded-xl text-[13px] font-sans font-medium text-red-600 bg-red-50 border border-red-200">
+            {errorMessage}
+          </p>
+        ) : null}
 
-        <div className="button-row">
-          <button className="button button--secondary" type="button" onClick={onBack} disabled={isSubmitting}>
-            &larr; Volver
+        <div className="flex gap-2.5">
+          <button
+            className="inline-flex items-center justify-center h-11 px-4 rounded-xl bg-white text-ink-mid font-sans text-sm font-bold border-[1.5px] border-slate-900/[0.14] shadow-sm hover:bg-slate-50 hover:-translate-y-px active:translate-y-0 disabled:opacity-45 disabled:cursor-not-allowed transition-all duration-150"
+            type="button"
+            onClick={onBack}
+            disabled={isSubmitting}
+          >
+            ← Volver
           </button>
-          <button className="button button--primary" type="submit" disabled={isSubmitting} style={{flex: 1}}>
+          <button
+            className="flex-1 inline-flex items-center justify-center h-11 px-5 rounded-xl bg-brand text-white font-sans text-sm font-bold tracking-wide shadow-[0_4px_14px_rgba(11,66,120,0.36),inset_0_1px_0_rgba(255,255,255,0.12)] hover:bg-brand-mid hover:-translate-y-px active:translate-y-0 disabled:opacity-45 disabled:cursor-not-allowed transition-all duration-150"
+            type="submit"
+            disabled={isSubmitting}
+          >
             {isSubmitting ? 'Verificando…' : 'Acceder a la papeleta →'}
           </button>
         </div>
