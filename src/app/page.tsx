@@ -241,10 +241,10 @@ export default function HomePage() {
               </svg>
               <div>
                 <p className="m-0 mb-1 text-[10px] font-bold font-sans uppercase tracking-[0.16em] text-[rgba(200,220,255,0.88)]">
-                  Servicio Local de Educacion Publica
+                  Servicio Local de Educacion Publica Santiago Centro
                 </p>
                 <h2 className="m-0 font-serif text-[clamp(17px,2.4vw,24px)] text-white leading-tight tracking-tight">
-                  Portal de votacion del Consejo Local
+                  Portal de votacion del Consejo Local 
                 </h2>
               </div>
             </div>
