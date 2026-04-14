@@ -229,20 +229,22 @@ Despues de login exitoso, la vista OTP muestra una tarjeta con:
 ### VotingView — Badge de padrón en la papeleta
 
 El encabezado de la papeleta muestra el nombre del votante acompañado de un badge "Padrón: {estamento}" con el color del estamento correspondiente, dejando claro a qué papeleta pertenece.
-- Círculos numerados que pasan a checkmark (SVG) al completarse
-- Línea conectora que se rellena en `--color-brand` al avanzar
-- Oculta en el estado `success`
 
-### OtpView — 6 cajas separadas
+### Barra de progreso de pasos
+
+Implementada en `page.tsx` como componente inline (no vista separada). Renderiza los 3 pasos del flujo (Identificacion → Verificacion → Papeleta) con:
+- Círculos numerados que pasan a checkmark (SVG) al completarse.
+- Línea conectora que se rellena en `--color-brand` al avanzar.
+- Oculta en el estado `success`.
+
+### LoginView — Validación de RUT en tiempo real
 
 - Implementa el algoritmo módulo 11 del RUT chileno (`validateRut`) directamente en el componente.
 - Muestra un indicador inline debajo del campo: ✓ verde con formato `12.345.678-9` si es válido, ✗ rojo si el dígito verificador no coincide.
 - Solo se muestra cuando ambos campos (número + dígito) tienen valor.
 - `formatRutNumber` formatea con puntos únicamente en el indicador; el estado interno guarda el número sin puntos.
 
-### Barra de progreso de pasos
-
-Implementada en `page.tsx` como componente inline (no vista separada). Renderiza los 3 pasos del flujo (Identificacion → Verificacion → Papeleta) con:
+### OtpView — 6 cajas separadas
 
 - Reemplaza el input único por 6 campos individuales gestionados con `useRef`.
 - **Auto-avance:** al escribir un dígito el foco pasa al siguiente campo automáticamente.
@@ -252,7 +254,7 @@ Implementada en `page.tsx` como componente inline (no vista separada). Renderiza
 - El botón de submit se deshabilita hasta que los 6 dígitos estén completos.
 - `autoComplete="one-time-code"` en la primera caja para sugerencia del browser.
 
-### Animaciones de transición entre pasos
+### VotingView — Modal de confirmación
 
 - Al hacer clic en «Confirmar voto →» se abre un modal (`.modal-backdrop` + `.modal-panel`) en lugar de enviar directamente.
 - El modal muestra la candidatura seleccionada (badge de color + nombre + rol).
@@ -260,31 +262,42 @@ Implementada en `page.tsx` como componente inline (no vista separada). Renderiza
 - Clic fuera del panel cierra el modal.
 - Estado `showConfirmModal` es local al componente (`useState`).
 
-### LoginView — Validación de RUT en tiempo real
+### Animaciones de transición entre pasos
 
 - `page.tsx` mantiene `transitionDirection: 'forward' | 'back'` en estado.
 - Avanzar (→): aplica `.view-enter-forward` (slide desde la derecha).
 - Retroceder (←): aplica `.view-enter-back` (slide desde la izquierda).
 - `handleBackToLogin` y `handleRestart` setean `'back'` antes del cambio de estado.
 
-### VotingView — Modal de confirmación
+### Skeleton loaders con forma exacta
 
 El skeleton de carga de papeleta replica la geometría real del `VotingView`:
 - Fila superior: bloque de texto (3 líneas) + placeholder rectangular del timer (`120×66px`).
-- Grid de 4 tarjetas: badge circular + línea de nombre (22px) + rol + 2 líneas de slogan.
+- Grid de tarjetas: badge circular + línea de nombre (22px) + rol + 2 líneas de slogan.
 - Fila inferior: placeholder del botón «Confirmar voto».
 
-### Skeleton loaders con forma exacta — CSP + renderizado dinámico (`layout.tsx`)
+---
+
+## Fix de producción — CSP + renderizado dinámico (`layout.tsx`)
 
 **Problema:** en Vercel los chunks `_next/static/chunks/*.js` eran bloqueados por CSP porque Next.js los inyectaba en el HTML sin el atributo `nonce`.
 
 **Causa raíz:** `layout.tsx` era un Server Component estático; Next.js no podía leer el nonce generado por el middleware Edge.
 
-**Solución aplicada:** `layout.tsx` ahora llama `await headers()` de `next/headers`. Esto fuerza renderizado dinámico por request, lo que permite que Next.js 15 lea el header `x-nonce` e inyecte `nonce="..."` automáticamente en todos los `<script>` tags generados.
+**Solución aplicada:** `layout.tsx` llama `await headers()` de `next/headers`. Esto fuerza renderizado dinámico por request, lo que permite que Next.js 15 lea el header `x-nonce` e inyecte `nonce="..."` en todos los `<script>` tags generados.
 
 ---
 
-## Fix de producción (Fases 1b + 2d)
+## Bugs de producción corregidos (Fase 2e)
+
+| Bug | Causa | Fix |
+|---|---|---|
+| Timer `useEffect` sin apertura | El `useEffect(() => {` del countdown faltaba — su cuerpo quedó flotando fuera de cualquier hook | Separar correctamente el idle-timeout effect y el countdown effect, cada uno con su propio `useEffect` y dependency array |
+| `idleTimer: ReturnType<typeof window.setTimeout>` | En el build de Next.js `@types/node` está presente — `window.setTimeout` resuelve a `NodeJS.Timeout` en vez de `number`, causando conflicto de tipos | Declarar `let idleTimer: number` explícitamente (tipo DOM correcto) |
+
+---
+
+## Seguridad implementada (Fases 1b + 2d)
 
 ### Headers HTTP
 

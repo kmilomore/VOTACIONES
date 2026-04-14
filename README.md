@@ -90,6 +90,7 @@ Cada transición se produce solo si la llamada al mock-api resuelve sin error. E
 | Validador RUT en tiempo real | Algoritmo módulo 11 inline — ✓ verde si válido, ✗ rojo si no |
 | Formato RUT con puntos | `12345678` → `12.345.678-9` en el indicador (estado interno sin puntos) |
 | OTP 6 cajas | Auto-avance, backspace inteligente, flechas ← →, pegado distribuido |
+| Tarjeta de usuario en OTP | Avatar con iniciales, nombre completo, organización y badge de estamento |
 | Modal de confirmación | Muestra candidatura antes de emitir — cancelable |
 | Transiciones entre pasos | Slide derecha al avanzar, slide izquierda al retroceder |
 | Skeleton loaders exactos | Placeholders con la geometría real de VotingView (timer, tarjetas, botón) |
@@ -98,6 +99,8 @@ Cada transición se produce solo si la llamada al mock-api resuelve sin error. E
 | Spinners en botones | Feedback inmediato en cada acción asíncrona |
 | SuccessView | Check SVG animado + candidatura elegida + comprobante `SLEP-XX-XXXXXXXX` |
 | Escudo SVG institucional | Header de banda azul con tres capas y checkmark interno |
+| Padrones por estamento | Cada votante ve únicamente los candidatos de su padrón (directivos / docentes / asistentes) |
+| Badge de padrón | VotingView muestra el nombre del padrón activo con color propio |
 
 ---
 
@@ -139,6 +142,9 @@ Cada transición se produce solo si la llamada al mock-api resuelve sin error. E
 - **No llamar `getCandidates()` en el mount inicial** — solo tras OTP exitoso.
 - **No exponer credenciales en la UI** — ni hints, ni placeholders con valores reales.
 - **No guardar el RUT con puntos en el estado** — el formato con puntos es solo visual en el indicador.
+- **No pasar candidatos de un estamento a otro** — `getCandidates` recibe siempre `user.estamento`; no usar el array global.
+- **No reutilizar el mismo OTP para todos los usuarios** — `verifyOtpCode` recibe `user.otp` como segundo argumento; no comparar contra constante global.
+- **No declarar `idleTimer` como `ReturnType<typeof window.setTimeout>`** — en el build de Next.js `@types/node` interfiere; usar `let idleTimer: number` explícitamente.
 
 ---
 
@@ -152,6 +158,7 @@ Cada transición se produce solo si la llamada al mock-api resuelve sin error. E
 | Fase 2b | Mejoras visuales: progress bar, skeletons, spinners, animaciones, SuccessView | ✅ |
 | Fase 2c | UX avanzado: validador RUT, OTP 6 cajas, modal confirmación, transiciones slide, fix CSP Vercel | ✅ |
 | Fase 2d | Seguridad avanzada: rate limiting IP, report-uri, COOP/CORP, Permissions-Policy extendida, allowlist inputs, expiración por inactividad | ✅ |
+| Fase 2e | Padrones por estamento: 3 usuarios ficticios, candidatos por padrón, OtpView con tarjeta de usuario, VotingView con badge de padrón, filtro dinámico de papeleta | ✅ |
 | Fase 3 | Backend: autenticación real, envío de correo, base de datos | ⬜ |
 | Fase 4 | Despliegue producción: Vercel + BD serverless | ⬜ |
 
@@ -162,95 +169,3 @@ Ver [`context.md`](./context.md) para documentación técnica completa.
 ## Repositorio
 
 [https://github.com/kmilomore/VOTACIONES](https://github.com/kmilomore/VOTACIONES)
-
----
-
-## Inicio rápido
-
-```bash
-# Instalar dependencias
-npm install
-
-# Servidor de desarrollo (http://localhost:3000)
-npm run dev
-
-# Build de producción
-npm run build
-```
-
-> **Nota:** Las credenciales de prueba del mock viven únicamente en `src/lib/mock-api.ts` y no se muestran en la UI.
-
----
-
-## Scripts
-
-| Comando | Descripción |
-|---|---|
-| `npm run dev` | Servidor de desarrollo en puerto 3000 |
-| `npm run build` | Build de producción |
-| `npm run start` | Servidor de producción |
-| `npm run lint` | Lint con ESLint |
-| `npm run test` | Tests unitarios (Vitest + RTL) |
-| `npm run test:e2e` | Tests E2E (Playwright) |
-
----
-
-## Estructura del proyecto
-
-```
-src/
-├── middleware.ts        # CSP nonce-based por request (Edge Runtime)
-├── app/
-│   ├── layout.tsx          # Root layout
-│   ├── page.tsx            # Orquestador — máquina de estados (login→otp→vote→success)
-│   └── globals.css         # Sistema de diseño institucional
-├── components/
-│   └── views/
-│       ├── LoginView.tsx   # Paso 1: RUT + email
-│       ├── OtpView.tsx     # Paso 2: código OTP
-│       ├── VotingView.tsx  # Paso 3: papeleta + temporizador
-│       └── SuccessView.tsx # Paso 4: confirmación
-├── lib/
-│   └── mock-api.ts         # Simulación de backend
-└── types/
-    └── index.ts            # Interfaces TypeScript
-```
-
----
-
-## Stack
-
-- **Next.js 15** — App Router
-- **React 19** — Client Components
-- **TypeScript 5** — modo estricto
-- **CSS puro** — sin Tailwind ni librerías de UI externas
-
----
-
-## UI / Experiencia
-
-- **Barra de progreso** — tres pasos visuales (Identificacion → Verificacion → Papeleta) con checkmarks animados
-- **Transiciones** — `fade + slide` al cambiar de vista vía `key={appState}`
-- **Skeleton loaders** — shimmer animado mientras se carga la papeleta
-- **Spinners en botones** — feedback inmediato en cada acción asíncrona
-- **Timer con urgencia** — cambia a amber (≤30s) y rojo (≤10s) antes de expirar
-- **Candidatos completos** — cada tarjeta muestra nombre, cargo y eslogan
-- **SuccessView** — check SVG animado, candidatura elegida destacada, comprobante en `<code>` monoespaciado
-- **Escudo SVG** — identidad institucional en el header de la banda azul
-
----
-
-## Seguridad
-
-- **CSP nonce-based** — `src/middleware.ts` genera un nonce criptográfico por request. En producción no hay `unsafe-inline` ni `unsafe-eval`.
-- **HSTS** — `Strict-Transport-Security: max-age=31536000; includeSubDomains; preload`
-- **Sin credenciales expuestas** — Los hints de prueba se eliminaron de la UI. No existen en el bundle de producción.
-- **Rate limiting frontend** — 5 intentos de login y 3 de OTP antes de bloquear.
-- **receiptCode seguro** — Generado con `crypto.randomUUID()`, no con timestamp.
-- **Candidatos protegidos** — La lista de candidatos solo se carga tras verificación OTP exitosa.
-
----
-
-## Estado del proyecto
-
-Fase 2b completada (mejoras visuales: animaciones, skeletons, barra de progreso, spinners, SuccessView rediseñada). Ver [`context.md`](./context.md) para documentación técnica completa y roadmap de fases.

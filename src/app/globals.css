@@ -1,5 +1,35 @@
 @import "tailwindcss";
 
+/* ─── Museo Sans ─────────────────────────────────────────────────────────── */
+@font-face {
+  font-family: 'Museo Sans';
+  src: url('/MuseoSans-100.woff') format('woff');
+  font-weight: 100;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Museo Sans';
+  src: url('/MuseoSans-500.woff') format('woff');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Museo Sans';
+  src: url('/MuseoSans-700.woff') format('woff');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Museo Sans';
+  src: url('/MuseoSans-900.woff') format('woff');
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* ─── Custom design tokens ─────────────────────────────────────────────── */
 @theme {
   --color-brand:      #0b5294;
@@ -10,18 +40,55 @@
   --color-ink-mid:    #1c3d5c;
   --color-ink-muted:  #4e6a85;
 
-  --font-sans:   "Segoe UI", system-ui, -apple-system, sans-serif;
-  --font-serif:  Cambria, Georgia, "Times New Roman", serif;
+  /* Both sans and serif map to Museo Sans — all existing utility classes work unchanged */
+  --font-sans:  'Museo Sans', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-serif: 'Museo Sans', 'Segoe UI', system-ui, -apple-system, sans-serif;
 }
 
 /* ─── Global base styles ────────────────────────────────────────────────── */
 @layer base {
   body {
-    font-family: var(--font-serif);
+    font-family: var(--font-sans);
+    font-weight: 100;          /* Museo Sans 100 — default body weight     */
     background-color: #082a4d;
   }
-  button,
-  input {
+
+  /* ── Visual hierarchy ────────────────────────────────────────────────── */
+  h1 {
+    font-weight: 700;          /* Bold  — portal / section title           */
+    letter-spacing: -0.025em;
+    line-height: 1.15;
+  }
+  h2 {
+    font-weight: 700;          /* Bold  — card/modal heading               */
+    letter-spacing: -0.015em;
+    line-height: 1.2;
+  }
+  h3 {
+    font-weight: 500;          /* Medium — subheadings                     */
+    letter-spacing: -0.01em;
+    line-height: 1.3;
+  }
+  h4, h5, h6 {
+    font-weight: 500;          /* Medium — minor headings                  */
+    line-height: 1.4;
+  }
+  p, li {
+    font-weight: 100;          /* 100  — body copy                         */
+    line-height: 1.65;
+  }
+  strong, b {
+    font-weight: 700;
+  }
+  label {
+    font-weight: 500;          /* Medium — form labels                     */
+  }
+  button {
+    font-weight: 500;          /* Medium — CTA / actions                   */
+    letter-spacing: 0.01em;
+  }
+  input, textarea, select {
+    font-weight: 100;          /* 100  — user input                        */
     font: inherit;
   }
 }
