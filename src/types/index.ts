@@ -1,9 +1,12 @@
+export type Estamento = 'directivos' | 'docentes' | 'asistentes';
+
 export interface User {
   rut: string;
   email: string;
   otp: string;
   fullName: string;
   organization: string;
+  estamento: Estamento;
 }
 
 export interface Candidate {
@@ -13,6 +16,7 @@ export interface Candidate {
   slogan: string;
   initials: string;
   accentColor: string;
+  estamento: Estamento;
 }
 
 export type AppState = 'login' | 'otp' | 'vote' | 'success';

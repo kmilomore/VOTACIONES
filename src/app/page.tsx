@@ -118,7 +118,7 @@ export default function HomePage() {
 
     // Step 1: verify OTP code
     try {
-      await verifyOtpCode(otp);
+      await verifyOtpCode(otp, user?.otp ?? '');
     } catch (error) {
       const nextAttempts = otpAttempts + 1;
       if (nextAttempts >= MAX_OTP_ATTEMPTS) {
@@ -141,7 +141,7 @@ export default function HomePage() {
     setOtp('');
     setIsLoadingCandidates(true);
     try {
-      const availableCandidates = await getCandidates();
+      const availableCandidates = await getCandidates(user!.estamento);
       setCandidates(availableCandidates);
       setRemainingSeconds(VOTING_WINDOW_SECONDS);
       setSelectedCandidateId(null);
@@ -301,6 +301,7 @@ export default function HomePage() {
             {appState === 'otp' ? (
               <OtpView
                 email={email}
+                user={user}
                 otp={otp}
                 isSubmitting={isSubmitting}
                 isLocked={isOtpLocked}
@@ -343,6 +344,7 @@ export default function HomePage() {
                 <VotingView
                   candidates={candidates}
                   voterName={user?.fullName ?? 'Participante'}
+                  estamento={user!.estamento}
                   selectedCandidateId={selectedCandidateId}
                   remainingSeconds={remainingSeconds}
                   hasExpired={hasExpired}

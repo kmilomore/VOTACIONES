@@ -1,14 +1,69 @@
-import type { Candidate, User } from '@/types';
+import type { Candidate, Estamento, User } from '@/types';
 
-const VALID_USER: User = {
-  rut: '16940271-k',
-  email: 'usuario@slep.cl',
-  otp: '123456',
-  fullName: 'Usuario de Prueba',
-  organization: 'SLEP Santiago Centro',
-};
+// ---------------------------------------------------------------------------
+// Usuarios ficticios de prueba — uno por estamento
+// ---------------------------------------------------------------------------
+// RUT 12345678-5 → Directivos
+// RUT 16940271-k → Docentes
+// RUT 19876543-0 → Asistentes de la Educación
+// ---------------------------------------------------------------------------
+const VALID_USERS: User[] = [
+  {
+    rut: '12345678-5',
+    email: 'director@slep.cl',
+    otp: '111111',
+    fullName: 'Carlos Muñoz Reyes',
+    organization: 'SLEP Santiago Centro',
+    estamento: 'directivos',
+  },
+  {
+    rut: '16940271-k',
+    email: 'docente@slep.cl',
+    otp: '222222',
+    fullName: 'María González Pérez',
+    organization: 'SLEP Santiago Centro',
+    estamento: 'docentes',
+  },
+  {
+    rut: '19876543-0',
+    email: 'asistente@slep.cl',
+    otp: '333333',
+    fullName: 'Ana Soto Vidal',
+    organization: 'SLEP Santiago Centro',
+    estamento: 'asistentes',
+  },
+];
 
 export const candidates: Candidate[] = [
+  // ── Directivos ────────────────────────────────────────────────────────────
+  {
+    id: 'pablo-reyes',
+    name: 'Pablo Reyes',
+    role: 'Director establecimiento zona norte',
+    slogan: 'Liderazgo pedagógico centrado en resultados colectivos.',
+    initials: 'PR',
+    accentColor: '#1a4a7a',
+    estamento: 'directivos',
+  },
+  {
+    id: 'claudia-fuentes',
+    name: 'Claudia Fuentes',
+    role: 'Directora establecimiento zona sur',
+    slogan: 'Gestión participativa para comunidades escolares fuertes.',
+    initials: 'CF',
+    accentColor: '#4a1a5a',
+    estamento: 'directivos',
+  },
+  {
+    id: 'rodrigo-espinoza',
+    name: 'Rodrigo Espinoza',
+    role: 'Jefe de Unidad Técnico-Pedagógica',
+    slogan: 'Innovación curricular con base en evidencia educativa.',
+    initials: 'RE',
+    accentColor: '#1a5a3a',
+    estamento: 'directivos',
+  },
+  // ── Docentes ─────────────────────────────────────────────────────────────
   {
     id: 'marisol-huerta',
     name: 'Marisol Huerta',
@@ -16,6 +71,7 @@ export const candidates: Candidate[] = [
     slogan: 'Participacion informada con foco en continuidad pedagogica.',
     initials: 'MH',
     accentColor: '#8c4f2f',
+    estamento: 'docentes',
   },
   {
     id: 'vianka-mejias',
@@ -24,6 +80,7 @@ export const candidates: Candidate[] = [
     slogan: 'Coordinacion intersectorial para escuelas mas conectadas.',
     initials: 'VM',
     accentColor: '#355c7d',
+    estamento: 'docentes',
   },
   {
     id: 'ximena-pino',
@@ -32,6 +89,7 @@ export const candidates: Candidate[] = [
     slogan: 'Vinculos de confianza para comunidades escolares solidas.',
     initials: 'XP',
     accentColor: '#44633f',
+    estamento: 'docentes',
   },
   {
     id: 'jorge-barahona',
@@ -40,6 +98,35 @@ export const candidates: Candidate[] = [
     slogan: 'Procesos simples y transparentes al servicio del territorio.',
     initials: 'JB',
     accentColor: '#6f4b8b',
+    estamento: 'docentes',
+  },
+  // ── Asistentes de la Educación ────────────────────────────────────────────
+  {
+    id: 'carmen-lagos',
+    name: 'Carmen Lagos',
+    role: 'Representante de asistentes zona oriente',
+    slogan: 'Reconocimiento y valoración del trabajo asistencial.',
+    initials: 'CL',
+    accentColor: '#7a3a1a',
+    estamento: 'asistentes',
+  },
+  {
+    id: 'miguel-torres',
+    name: 'Miguel Torres',
+    role: 'Representante técnico-administrativo',
+    slogan: 'Coordinación efectiva entre equipos de apoyo escolar.',
+    initials: 'MT',
+    accentColor: '#1a6a6a',
+    estamento: 'asistentes',
+  },
+  {
+    id: 'patricia-vera',
+    name: 'Patricia Vera',
+    role: 'Representante de auxiliares de educación',
+    slogan: 'Condiciones dignas y reconocimiento para todos los estamentos.',
+    initials: 'PV',
+    accentColor: '#5a4a1a',
+    estamento: 'asistentes',
   },
 ];
 
@@ -70,29 +157,28 @@ export async function verifyUserCredentials(rut: string, email: string): Promise
   const normalizedRut = normalizeRut(rut);
   const normalizedEmail = normalizeEmail(email);
 
-  if (
-    normalizedRut === normalizeRut(VALID_USER.rut) &&
-    normalizedEmail === normalizeEmail(VALID_USER.email)
-  ) {
-    return VALID_USER;
-  }
+  const match = VALID_USERS.find(
+    (u) =>
+      normalizeRut(u.rut) === normalizedRut &&
+      normalizeEmail(u.email) === normalizedEmail,
+  );
+
+  if (match) return match;
 
   throw new Error('No encontramos una coincidencia valida para el RUT y correo ingresados.');
 }
 
-export async function verifyOtpCode(otp: string): Promise<string> {
+export async function verifyOtpCode(otp: string, expectedOtp: string): Promise<void> {
   await wait(randomDelay());
 
-  if (otp.trim() === VALID_USER.otp) {
-    return VALID_USER.otp;
-  }
+  if (otp.trim() === expectedOtp.trim()) return;
 
   throw new Error('El codigo OTP no es valido o ha expirado.');
 }
 
-export async function getCandidates(): Promise<Candidate[]> {
+export async function getCandidates(estamento: Estamento): Promise<Candidate[]> {
   await wait(500);
-  return candidates;
+  return candidates.filter((c) => c.estamento === estamento);
 }
 
 export async function submitVote(candidateId: string): Promise<{ receiptCode: string; candidate: Candidate }> {

@@ -2,8 +2,23 @@
 
 import React, { useRef } from 'react';
 
+import type { Estamento, User } from '@/types';
+
+const ESTAMENTO_LABELS: Record<Estamento, string> = {
+  directivos: 'Directivos',
+  docentes: 'Docentes',
+  asistentes: 'Asistentes de la Educación',
+};
+
+const ESTAMENTO_COLORS: Record<Estamento, string> = {
+  directivos: '#1a4a7a',
+  docentes: '#8c4f2f',
+  asistentes: '#1a6a6a',
+};
+
 interface OtpViewProps {
   email: string;
+  user: User | null;
   otp: string;
   isSubmitting: boolean;
   isLocked: boolean;
@@ -18,6 +33,7 @@ const digitClass =
 
 export function OtpView({
   email,
+  user,
   otp,
   isSubmitting,
   isLocked,
@@ -71,6 +87,35 @@ export function OtpView({
           Enviamos un codigo de 6 d&#237;gitos a <strong>{email}</strong>. Ingrésalo a continuacion.
         </p>
       </div>
+
+      {/* User info card */}
+      {user ? (
+        <div className="mb-4 flex items-center gap-3 px-3.5 py-3 rounded-2xl bg-slate-50 border border-slate-900/[0.08]">
+          <div
+            className="shrink-0 w-10 h-10 rounded-full inline-grid place-items-center text-[13px] font-bold font-sans"
+            style={{
+              background: `color-mix(in srgb, ${ESTAMENTO_COLORS[user.estamento]} 18%, white)`,
+              color: ESTAMENTO_COLORS[user.estamento],
+            }}
+          >
+            {user.fullName.split(' ').slice(0, 2).map((n) => n[0]).join('')}
+          </div>
+          <div className="min-w-0">
+            <p className="m-0 font-sans font-bold text-[14px] text-ink leading-tight truncate">{user.fullName}</p>
+            <p className="m-0 mt-0.5 font-sans text-[11px] text-ink-muted leading-tight">{user.organization}</p>
+          </div>
+          <span
+            className="ml-auto shrink-0 px-2.5 py-1 rounded-full text-[10px] font-bold font-sans uppercase tracking-wide whitespace-nowrap"
+            style={{
+              background: `color-mix(in srgb, ${ESTAMENTO_COLORS[user.estamento]} 14%, white)`,
+              color: ESTAMENTO_COLORS[user.estamento],
+              border: `1px solid color-mix(in srgb, ${ESTAMENTO_COLORS[user.estamento]} 28%, white)`,
+            }}
+          >
+            {ESTAMENTO_LABELS[user.estamento]}
+          </span>
+        </div>
+      ) : null}
 
       <form className="grid gap-3.5" onSubmit={onSubmit}>
         <div className="grid gap-2">

@@ -2,11 +2,24 @@
 
 import React, { useState } from 'react';
 
-import type { Candidate } from '@/types';
+import type { Candidate, Estamento } from '@/types';
+
+const ESTAMENTO_LABELS: Record<Estamento, string> = {
+  directivos: 'Directivos',
+  docentes: 'Docentes',
+  asistentes: 'Asistentes de la Educación',
+};
+
+const ESTAMENTO_COLORS: Record<Estamento, string> = {
+  directivos: '#1a4a7a',
+  docentes: '#8c4f2f',
+  asistentes: '#1a6a6a',
+};
 
 interface VotingViewProps {
   candidates: Candidate[];
   voterName: string;
+  estamento: Estamento;
   selectedCandidateId: string | null;
   remainingSeconds: number;
   hasExpired: boolean;
@@ -25,6 +38,7 @@ function formatTimer(totalSeconds: number) {
 export function VotingView({
   candidates,
   voterName,
+  estamento,
   selectedCandidateId,
   remainingSeconds,
   hasExpired,
@@ -47,15 +61,27 @@ export function VotingView({
       {/* Header row: title + timer */}
       <div className="flex gap-3 justify-between items-start mb-4 pb-4 border-b border-slate-900/[0.08]">
         <div className="min-w-0">
-          <p className="m-0 mb-1.5 text-[10px] font-bold font-sans uppercase tracking-[0.16em] text-ink-muted">
+          <p className="mt-0 mb-0 text-[10px] font-bold font-sans uppercase tracking-[0.16em] text-ink-muted">
             Papeleta digital
           </p>
           <h1 className="m-0 font-serif text-[clamp(20px,2.6vw,28px)] text-ink leading-none tracking-tight">
             Emision de voto
           </h1>
-          <p className="mt-2 mb-0 text-sm text-ink-muted font-sans leading-relaxed">
-            {voterName}, selecciona una candidatura y confirma tu voto antes de que expire la sesion.
-          </p>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <p className="m-0 text-sm text-ink-muted font-sans leading-relaxed">
+              {voterName}, selecciona una candidatura y confirma tu voto antes de que expire la sesion.
+            </p>
+            <span
+              className="inline-flex shrink-0 px-2.5 py-1 rounded-full text-[10px] font-bold font-sans uppercase tracking-wide"
+              style={{
+                background: `color-mix(in srgb, ${ESTAMENTO_COLORS[estamento]} 14%, white)`,
+                color: ESTAMENTO_COLORS[estamento],
+                border: `1px solid color-mix(in srgb, ${ESTAMENTO_COLORS[estamento]} 28%, white)`,
+              }}
+            >
+              Padron: {ESTAMENTO_LABELS[estamento]}
+            </span>
+          </div>
         </div>
 
         {/* Timer */}
