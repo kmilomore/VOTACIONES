@@ -70,10 +70,15 @@ export function LoginView({
               className={inputClass}
               type="text"
               inputMode="numeric"
+              pattern="[0-9]*"
               autoComplete="off"
               placeholder="12345678"
               value={rutNumber}
-              onChange={(event) => onRutNumberChange(event.target.value.replace(/\D/g, '').slice(0, 8))}
+              onChange={(event) => {
+                // Allowlist: only ASCII digits 0-9, max 8 chars
+                const sanitized = event.target.value.replace(/[^0-9]/g, '').slice(0, 8);
+                onRutNumberChange(sanitized);
+              }}
               required
             />
             <span className="text-[#36506c] text-xl font-bold select-none">–</span>
@@ -84,7 +89,11 @@ export function LoginView({
               autoComplete="off"
               placeholder="9"
               value={rutVerifier}
-              onChange={(event) => onRutVerifierChange(event.target.value.replace(/[^0-9kK]/g, '').slice(0, 1).toUpperCase())}
+              onChange={(event) => {
+                // Allowlist: only digits 0-9 or letter K/k, single char
+                const sanitized = event.target.value.replace(/[^0-9kK]/g, '').slice(0, 1).toUpperCase();
+                onRutVerifierChange(sanitized);
+              }}
               required
             />
           </div>

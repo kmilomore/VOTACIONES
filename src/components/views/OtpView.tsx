@@ -85,6 +85,7 @@ export function OtpView({
                 className={digitClass}
                 type="text"
                 inputMode="numeric"
+                pattern="[0-9]*"
                 autoComplete={i === 0 ? 'one-time-code' : 'off'}
                 maxLength={2}
                 value={digit}

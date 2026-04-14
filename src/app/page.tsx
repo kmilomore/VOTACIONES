@@ -17,6 +17,8 @@ import type { AppState, Candidate, User } from '@/types';
 const VOTING_WINDOW_SECONDS = 120;
 const MAX_LOGIN_ATTEMPTS = 5;
 const MAX_OTP_ATTEMPTS = 3;
+// Idle timeout (#29): reset to login after 5 min without interaction in otp/vote states
+const IDLE_TIMEOUT_MS = 5 * 60 * 1000;
 
 export default function HomePage() {
   const [appState, setAppState] = useState<AppState>('login');
@@ -37,7 +39,35 @@ export default function HomePage() {
   const [isLoadingCandidates, setIsLoadingCandidates] = useState(false);
   const [transitionDirection, setTransitionDirection] = useState<'forward' | 'back'>('forward');
 
+  // Idle session expiry (#29) — reset to login after IDLE_TIMEOUT_MS of inactivity
+  // Only active during 'otp' and 'vote' states.
   useEffect(() => {
+    if (appState !== 'otp' && appState !== 'vote') return undefined;
+
+    let idleTimer: ReturnType<typeof window.setTimeout>;
+
+    function resetTimer() {
+      window.clearTimeout(idleTimer);
+      idleTimer = window.setTimeout(() => {
+        setTransitionDirection('back');
+        setAppState('login');
+        setOtp('');
+        setUser(null);
+        setLoginAttempts(0);
+        setOtpAttempts(0);
+        setErrorMessage('La sesion expiro por inactividad. Por favor, vuelve a identificarte.');
+      }, IDLE_TIMEOUT_MS);
+    }
+
+    const events = ['mousemove', 'keydown', 'pointerdown', 'touchstart'] as const;
+    events.forEach((ev) => window.addEventListener(ev, resetTimer, { passive: true }));
+    resetTimer();
+
+    return () => {
+      window.clearTimeout(idleTimer);
+      events.forEach((ev) => window.removeEventListener(ev, resetTimer));
+    };
+  }, [appState]);
     if (appState !== 'vote' || remainingSeconds <= 0) {
       return undefined;
     }
