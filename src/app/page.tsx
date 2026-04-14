@@ -44,7 +44,7 @@ export default function HomePage() {
   useEffect(() => {
     if (appState !== 'otp' && appState !== 'vote') return undefined;
 
-    let idleTimer: ReturnType<typeof window.setTimeout>;
+    let idleTimer: number;
 
     function resetTimer() {
       window.clearTimeout(idleTimer);
