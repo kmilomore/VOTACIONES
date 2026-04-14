@@ -7,22 +7,48 @@ interface SuccessViewProps {
 
 export function SuccessView({ voterName, candidateName, receiptCode, onRestart }: SuccessViewProps) {
   return (
-    <section className="rounded-2xl bg-white/95 backdrop-blur-sm border border-slate-900/10 text-ink p-5">
-      <div className="grid gap-3 justify-items-start">
-        <h1 className="m-0 font-serif text-[clamp(20px,2.6vw,28px)] text-ink leading-none tracking-tight">
-          Gracias por participar
-        </h1>
-        <p className="m-0 text-sm text-ink-muted font-sans leading-relaxed">
-          {voterName}, tu preferencia por <strong className="text-ink">{candidateName}</strong> fue registrada correctamente en el entorno de prueba.
-        </p>
+    <section className="rounded-2xl bg-white/95 backdrop-blur-sm border border-slate-900/10 text-ink p-6">
+      <div className="grid gap-4 justify-items-center text-center">
 
-        <div className="w-full px-4 py-3 rounded-2xl border border-slate-900/10 bg-white shadow-sm">
-          <span className="block text-[10px] font-bold font-sans uppercase tracking-[0.14em] text-ink-muted">Comprobante simulado</span>
-          <strong className="block mt-1.5 text-lg font-sans text-ink tracking-wider">{receiptCode}</strong>
+        {/* Animated check icon */}
+        <div className="check-circle w-16 h-16 rounded-full bg-emerald-50 border-2 border-emerald-200 flex items-center justify-center">
+          <svg width="32" height="32" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+            <path
+              className="check-path"
+              d="M7 16l6 6 12-12"
+              stroke="#059669"
+              strokeWidth="3"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
         </div>
 
-        <p className="m-0 px-3.5 py-2.5 rounded-xl text-[13px] font-sans font-medium text-emerald-700 bg-emerald-50 border border-emerald-200">
-          Esta confirmacion representa la fase de frontend con datos simulados del portal institucional.
+        <div className="grid gap-1.5">
+          <h1 className="m-0 font-serif text-[clamp(22px,3vw,30px)] text-ink leading-none tracking-tight">
+            ¡Voto registrado!
+          </h1>
+          <p className="m-0 text-sm text-ink-muted font-sans leading-relaxed">
+            {voterName}, tu preferencia fue registrada correctamente.
+          </p>
+        </div>
+
+        <div className="w-full px-4 py-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-left">
+          <span className="block text-[10px] font-bold font-sans uppercase tracking-[0.14em] text-ink-muted mb-1">
+            Candidatura elegida
+          </span>
+          <strong className="block text-[17px] font-serif text-ink">{candidateName}</strong>
+        </div>
+
+        <div className="w-full px-4 py-3.5 rounded-2xl border border-slate-900/10 bg-white shadow-sm text-left">
+          <span className="block text-[10px] font-bold font-sans uppercase tracking-[0.14em] text-ink-muted mb-1.5">
+            Codigo de comprobante
+          </span>
+          <code className="block text-[12px] font-mono text-ink tracking-wider break-all">{receiptCode}</code>
+        </div>
+
+        <p className="m-0 w-full px-3.5 py-2.5 rounded-xl text-[12px] font-sans text-emerald-700 bg-emerald-50 border border-emerald-200 text-left">
+          Entorno de prueba — datos simulados del portal institucional.
         </p>
 
         <button

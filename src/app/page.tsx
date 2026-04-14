@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 import { LoginView } from '@/components/views/LoginView';
 import { OtpView } from '@/components/views/OtpView';
@@ -174,6 +174,10 @@ export default function HomePage() {
     setErrorMessage(null);
   }
 
+  const STEPS = ['Identificacion', 'Verificacion', 'Papeleta'];
+  const stepMap: Record<AppState, number> = { login: 0, otp: 1, vote: 2, success: 3 };
+  const currentStep = stepMap[appState];
+
   return (
     <main className="relative min-h-screen overflow-hidden isolate font-serif">
       {/* Background image */}
@@ -189,81 +193,136 @@ export default function HomePage() {
           {/* Institutional intro band */}
           <div className="relative mb-2 px-[18px] py-4 rounded-2xl overflow-hidden border border-white/10 bg-gradient-to-br from-brand-deep via-brand-mid to-brand">
             <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_80%_0%,rgba(255,255,255,0.06),transparent_55%)] pointer-events-none" />
-            <p className="relative m-0 mb-1.5 text-[10px] font-bold font-sans uppercase tracking-[0.16em] text-[rgba(200,220,255,0.88)]">
-              Servicio Local de Educacion Publica
-            </p>
-            <h2 className="relative m-0 font-serif text-[clamp(20px,2.8vw,30px)] text-white leading-none tracking-tight">
-              Portal de votacion del Consejo Local
-            </h2>
-            {/* TODO(backend-integration): replace description with production copy, remove 'datos simulados' reference */}
-            <p className="relative mt-2 text-sm font-sans text-[rgba(210,228,255,0.82)] max-w-[48ch] leading-relaxed m-0">
-              Una interfaz limpia para validar el flujo de acceso, autenticacion por OTP y emision de voto con datos simulados.
-            </p>
+            <div className="relative flex items-center gap-4">
+              {/* Escudo institucional */}
+              <svg className="shrink-0" width="40" height="46" viewBox="0 0 44 50" fill="none" aria-hidden="true">
+                <path d="M22 2L4 10v14c0 12 8.5 22 18 26 9.5-4 18-14 18-26V10L22 2z" fill="rgba(255,255,255,0.1)" stroke="rgba(255,255,255,0.38)" strokeWidth="1.5" strokeLinejoin="round" />
+                <path d="M22 9L11 14v9c0 7.5 5 13.5 11 16 6-2.5 11-8.5 11-16v-9L22 9z" fill="rgba(255,255,255,0.14)" stroke="rgba(255,255,255,0.22)" strokeWidth="1" strokeLinejoin="round" />
+                <path d="M16 24l4 4 8-8" stroke="rgba(255,255,255,0.72)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              <div>
+                <p className="m-0 mb-1 text-[10px] font-bold font-sans uppercase tracking-[0.16em] text-[rgba(200,220,255,0.88)]">
+                  Servicio Local de Educacion Publica
+                </p>
+                <h2 className="m-0 font-serif text-[clamp(17px,2.4vw,24px)] text-white leading-tight tracking-tight">
+                  Portal de votacion del Consejo Local
+                </h2>
+              </div>
+            </div>
           </div>
 
-          {appState === 'login' ? (
-            <LoginView
-              rutNumber={rutNumber}
-              rutVerifier={rutVerifier}
-              email={email}
-              isSubmitting={isSubmitting}
-              isLocked={isLoginLocked}
-              errorMessage={errorMessage}
-              onRutNumberChange={setRutNumber}
-              onRutVerifierChange={setRutVerifier}
-              onEmailChange={setEmail}
-              onSubmit={handleLoginSubmit}
-            />
+          {/* Step progress */}
+          {appState !== 'success' ? (
+            <div className="flex items-start mx-1 mb-2.5 mt-1">
+              {STEPS.map((label, i) => {
+                const done = currentStep > i;
+                const active = currentStep === i;
+                return (
+                  <React.Fragment key={label}>
+                    <div className="flex flex-col items-center gap-1">
+                      <div className={`w-6 h-6 rounded-full flex items-center justify-center transition-all duration-300 font-sans font-bold text-[11px] ${
+                        done
+                          ? 'bg-brand text-white'
+                          : active
+                          ? 'bg-brand text-white ring-[3px] ring-brand/20'
+                          : 'bg-slate-100 text-ink-muted'
+                      }`}>
+                        {done ? (
+                          <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
+                            <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        ) : (i + 1)}
+                      </div>
+                      <span className={`text-[9.5px] font-sans font-semibold whitespace-nowrap transition-colors ${
+                        done || active ? 'text-brand' : 'text-ink-muted'
+                      }`}>{label}</span>
+                    </div>
+                    {i < STEPS.length - 1 ? (
+                      <div className={`flex-1 h-px mt-3 mx-1.5 transition-all duration-500 ${done ? 'bg-brand' : 'bg-slate-200'}`} />
+                    ) : null}
+                  </React.Fragment>
+                );
+              })}
+            </div>
           ) : null}
 
-          {appState === 'otp' ? (
-            <OtpView
-              email={email}
-              otp={otp}
-              isSubmitting={isSubmitting}
-              isLocked={isOtpLocked}
-              errorMessage={errorMessage}
-              onOtpChange={setOtp}
-              onBack={handleBackToLogin}
-              onSubmit={handleOtpSubmit}
-            />
-          ) : null}
-
-          {appState === 'vote' ? (
-            isLoadingCandidates ? (
-              <section className="rounded-2xl bg-white/95 border border-slate-900/10 text-ink p-5 min-h-[240px] grid content-start gap-2">
-                <p className="m-0 text-[10px] font-bold font-sans uppercase tracking-[0.16em] text-ink-muted">Cargando papeleta</p>
-                <h1 className="m-0 font-serif text-[clamp(20px,2.6vw,28px)] text-ink leading-none tracking-tight">Preparando candidaturas</h1>
-                <p className="m-0 text-sm text-ink-muted font-sans leading-relaxed">
-                  Estamos organizando la informacion simulada antes de mostrar la votacion.
-                </p>
-              </section>
-            ) : (
-              <VotingView
-                candidates={candidates}
-                voterName={user?.fullName ?? 'Participante'}
-                selectedCandidateId={selectedCandidateId}
-                remainingSeconds={remainingSeconds}
-                hasExpired={hasExpired}
+          <div key={appState} className="view-enter">
+            {appState === 'login' ? (
+              <LoginView
+                rutNumber={rutNumber}
+                rutVerifier={rutVerifier}
+                email={email}
                 isSubmitting={isSubmitting}
+                isLocked={isLoginLocked}
                 errorMessage={errorMessage}
-                onSelectCandidate={(candidateId) => {
-                  setSelectedCandidateId(candidateId);
-                  setErrorMessage(null);
-                }}
-                onSubmitVote={handleVoteSubmit}
+                onRutNumberChange={setRutNumber}
+                onRutVerifierChange={setRutVerifier}
+                onEmailChange={setEmail}
+                onSubmit={handleLoginSubmit}
               />
-            )
-          ) : null}
+            ) : null}
 
-          {appState === 'success' ? (
-            <SuccessView
-              voterName={user?.fullName ?? 'Participante'}
-              candidateName={confirmedCandidateName}
-              receiptCode={receiptCode}
-              onRestart={handleRestart}
-            />
-          ) : null}
+            {appState === 'otp' ? (
+              <OtpView
+                email={email}
+                otp={otp}
+                isSubmitting={isSubmitting}
+                isLocked={isOtpLocked}
+                errorMessage={errorMessage}
+                onOtpChange={setOtp}
+                onBack={handleBackToLogin}
+                onSubmit={handleOtpSubmit}
+              />
+            ) : null}
+
+            {appState === 'vote' ? (
+              isLoadingCandidates ? (
+                <section className="rounded-2xl bg-white/95 border border-slate-900/10 p-5">
+                  <div className="grid gap-4">
+                    <div className="grid gap-2.5 pb-4 border-b border-slate-900/[0.08]">
+                      <div className="skeleton h-3 w-28 rounded-full" />
+                      <div className="skeleton h-7 w-44 rounded-lg" />
+                      <div className="skeleton h-4 w-56 rounded" />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      {[0, 1, 2, 3].map((i) => (
+                        <div key={i} className="p-3.5 rounded-2xl border border-slate-100 grid gap-2.5">
+                          <div className="skeleton w-11 h-11 rounded-full" />
+                          <div className="skeleton h-4 w-3/4 rounded" />
+                          <div className="skeleton h-3 w-1/2 rounded" />
+                          <div className="skeleton h-3 w-5/6 rounded" />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </section>
+              ) : (
+                <VotingView
+                  candidates={candidates}
+                  voterName={user?.fullName ?? 'Participante'}
+                  selectedCandidateId={selectedCandidateId}
+                  remainingSeconds={remainingSeconds}
+                  hasExpired={hasExpired}
+                  isSubmitting={isSubmitting}
+                  errorMessage={errorMessage}
+                  onSelectCandidate={(candidateId) => {
+                    setSelectedCandidateId(candidateId);
+                    setErrorMessage(null);
+                  }}
+                  onSubmitVote={handleVoteSubmit}
+                />
+              )
+            ) : null}
+
+            {appState === 'success' ? (
+              <SuccessView
+                voterName={user?.fullName ?? 'Participante'}
+                candidateName={confirmedCandidateName}
+                receiptCode={receiptCode}
+                onRestart={handleRestart}
+              />
+            ) : null}
+          </div>
         </div>
       </section>
     </main>

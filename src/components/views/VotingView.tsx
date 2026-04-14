@@ -46,7 +46,13 @@ export function VotingView({
         </div>
 
         {/* Timer */}
-        <div className={`shrink-0 min-w-[120px] px-3 py-2.5 rounded-2xl border text-center font-sans bg-white shadow-sm transition-colors ${hasExpired ? 'border-red-200 text-red-600' : 'border-slate-900/10 text-ink'}`}>
+        <div className={`shrink-0 min-w-[120px] px-3 py-2.5 rounded-2xl border text-center font-sans shadow-sm transition-all duration-300 ${
+          hasExpired || remainingSeconds <= 10
+            ? 'border-red-200 text-red-600 bg-red-50'
+            : remainingSeconds <= 30
+            ? 'border-amber-200 text-amber-700 bg-amber-50'
+            : 'border-slate-900/10 text-ink bg-white'
+        }`}>
           <span className="block text-[10px] font-bold uppercase tracking-[0.14em] text-ink-muted">Tiempo</span>
           <strong className="block mt-1 text-xl tabular-nums">{formatTimer(remainingSeconds)}</strong>
         </div>
@@ -76,6 +82,12 @@ export function VotingView({
               <span className="text-[17px] font-bold text-ink font-serif leading-tight">
                 {candidate.name}
               </span>
+              <span className="text-[11px] font-sans font-medium text-ink-muted leading-tight">
+                {candidate.role}
+              </span>
+              <span className="text-[11px] font-sans italic text-ink-muted/70 leading-snug line-clamp-2">
+                &ldquo;{candidate.slogan}&rdquo;
+              </span>
             </button>
           );
         })}
@@ -100,7 +112,7 @@ export function VotingView({
           onClick={onSubmitVote}
           disabled={hasExpired || isSubmitting || !selectedCandidateId}
         >
-          {isSubmitting ? 'Registrando…' : 'Confirmar voto →'}
+          {isSubmitting ? <><span className="btn-spinner mr-2" />Registrando…</> : 'Confirmar voto →'}
         </button>
       </div>
     </section>

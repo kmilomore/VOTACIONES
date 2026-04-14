@@ -31,10 +31,7 @@ export function LoginView({
   return (
     <section className="rounded-2xl bg-white/95 backdrop-blur-sm border border-slate-900/10 text-ink p-5">
       <div className="mb-4 pb-4 border-b border-slate-900/[0.08]">
-        <span className="inline-flex items-center px-3 py-1 rounded-full bg-blue-50 border border-blue-200/70 text-brand-mid text-[11px] font-bold font-sans uppercase tracking-[0.04em]">
-          Paso 1 de 3 — Identificacion
-        </span>
-        <h1 className="mt-2.5 mb-0 font-serif text-[clamp(20px,2.6vw,28px)] text-ink leading-none tracking-tight">
+        <h1 className="mt-0 mb-0 font-serif text-[clamp(20px,2.6vw,28px)] text-ink leading-none tracking-tight">
           Ingresa para votar
         </h1>
         <p className="mt-2 mb-0 text-sm text-ink-muted font-sans leading-relaxed">
@@ -96,7 +93,7 @@ export function LoginView({
           type="submit"
           disabled={isSubmitting || isLocked}
         >
-          {isSubmitting ? 'Validando…' : 'Continuar →'}
+          {isSubmitting ? <><span className="btn-spinner mr-2" />Validando…</> : 'Continuar →'}
         </button>
       </form>
     </section>
