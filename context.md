@@ -162,14 +162,16 @@ Todas las funciones simulan latencia aleatoria entre 700ms y 1400ms usando `setT
 | Clase | Descripción |
 |---|---|
 | `.bg-portal` | Wrapper raíz con fondo `fondo.webp` |
-| `.otp-input` | Input OTP monoespaciado con tracking amplio |
 | `.candidate-badge` | Badge circular con color de acento del candidato (`color-mix`) |
 | `.candidate-selected` | Estado seleccionado de tarjeta de candidato |
-| `.view-enter` | Animación `fade-slide-in` al montar cada vista (0.22s ease-out) |
+| `.view-enter-forward` | Slide desde la derecha al avanzar entre pasos (0.25s ease-out) |
+| `.view-enter-back` | Slide desde la izquierda al retroceder entre pasos (0.25s ease-out) |
 | `.skeleton` | Shimmer animado para skeleton loaders (1.4s infinito) |
 | `.btn-spinner` | Spinner SVG circular para estado de carga en botones |
 | `.check-circle` | Contenedor del check con animación `scale` de entrada |
 | `.check-path` | Trazo SVG del check con animación `stroke-dashoffset` |
+| `.modal-backdrop` | Overlay del modal de confirmación (fixed, blur, z-50) |
+| `.modal-panel` | Panel del modal con animación spring de entrada |
 
 ### Barra de progreso de pasos
 
@@ -178,9 +180,54 @@ Implementada en `page.tsx` como componente inline (no vista separada). Renderiza
 - Línea conectora que se rellena en `--color-brand` al avanzar
 - Oculta en el estado `success`
 
-### Banda institucional
+### LoginView — Validación de RUT en tiempo real
 
-El header azul (`from-brand-deep to-brand`) incluye un escudo SVG de tres capas con checkmark interno, alineado a la izquierda del título del portal.
+- Implementa el algoritmo módulo 11 del RUT chileno (`validateRut`) directamente en el componente.
+- Muestra un indicador inline debajo del campo: ✓ verde con formato `12.345.678-9` si es válido, ✗ rojo si el dígito verificador no coincide.
+- Solo se muestra cuando ambos campos (número + dígito) tienen valor.
+- `formatRutNumber` formatea con puntos únicamente en el indicador; el estado interno guarda el número sin puntos.
+
+### OtpView — 6 cajas separadas
+
+- Reemplaza el input único por 6 campos individuales gestionados con `useRef`.
+- **Auto-avance:** al escribir un dígito el foco pasa al siguiente campo automáticamente.
+- **Backspace inteligente:** si el campo está vacío, borra el campo anterior y vuelve el foco.
+- **Navegación con flechas:** ← → mueven el foco entre cajas.
+- **Pegado:** `onPaste` distribuye hasta 6 dígitos en las cajas y posiciona el foco correctamente.
+- El botón de submit se deshabilita hasta que los 6 dígitos estén completos.
+- `autoComplete="one-time-code"` en la primera caja para sugerencia del browser.
+
+### VotingView — Modal de confirmación
+
+- Al hacer clic en «Confirmar voto →» se abre un modal (`.modal-backdrop` + `.modal-panel`) en lugar de enviar directamente.
+- El modal muestra la candidatura seleccionada (badge de color + nombre + rol).
+- Botones: **Cancelar** (cierra el modal) y **Emitir voto →** (llama a `onSubmitVote`).
+- Clic fuera del panel cierra el modal.
+- Estado `showConfirmModal` es local al componente (`useState`).
+
+### Animaciones de transición entre pasos
+
+- `page.tsx` mantiene `transitionDirection: 'forward' | 'back'` en estado.
+- Avanzar (→): aplica `.view-enter-forward` (slide desde la derecha).
+- Retroceder (←): aplica `.view-enter-back` (slide desde la izquierda).
+- `handleBackToLogin` y `handleRestart` setean `'back'` antes del cambio de estado.
+
+### Skeleton loaders con forma exacta
+
+El skeleton de carga de papeleta replica la geometría real del `VotingView`:
+- Fila superior: bloque de texto (3 líneas) + placeholder rectangular del timer (`120×66px`).
+- Grid de 4 tarjetas: badge circular + línea de nombre (22px) + rol + 2 líneas de slogan.
+- Fila inferior: placeholder del botón «Confirmar voto».
+
+---
+
+## Fix de producción — CSP + renderizado dinámico (`layout.tsx`)
+
+**Problema:** en Vercel los chunks `_next/static/chunks/*.js` eran bloqueados por CSP porque Next.js los inyectaba en el HTML sin el atributo `nonce`.
+
+**Causa raíz:** `layout.tsx` era un Server Component estático; Next.js no podía leer el nonce generado por el middleware Edge.
+
+**Solución aplicada:** `layout.tsx` ahora llama `await headers()` de `next/headers`. Esto fuerza renderizado dinámico por request, lo que permite que Next.js 15 lea el header `x-nonce` e inyecte `nonce="..."` automáticamente en todos los `<script>` tags generados.
 
 ---
 
@@ -242,6 +289,7 @@ Gestionados en dos capas:
 | Fase 1b | Auditoría de seguridad frontend (CSP nonce, HSTS, rate limiting, receiptCode seguro) | ✅ Completado |
 | Fase 2 | Testing (Vitest + RTL unit tests · Playwright E2E) | ✅ Completado |
 | Fase 2b | Mejoras visuales: barra de progreso, skeletons, spinners, animaciones, escudo SVG, SuccessView rediseñada, role/slogan en candidatos, timer con urgencia | ✅ Completado |
+| Fase 2c | UX avanzado: validador RUT en tiempo real, OTP 6 cajas, modal de confirmación, transiciones slide, skeletons exactos, fix CSP Vercel | ✅ Completado |
 | Fase 3 | Backend: autenticación real, envío de correo, base de datos | ⬜ Pendiente |
 | Fase 4 | Despliegue en producción (Vercel + BD serverless) | ⬜ Pendiente |
 

@@ -1,7 +1,7 @@
 import type { Candidate, User } from '@/types';
 
 const VALID_USER: User = {
-  rut: '12345678-9',
+  rut: '16940271-k',
   email: 'usuario@slep.cl',
   otp: '123456',
   fullName: 'Usuario de Prueba',
