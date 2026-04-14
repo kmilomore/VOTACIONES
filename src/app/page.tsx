@@ -68,6 +68,9 @@ export default function HomePage() {
       events.forEach((ev) => window.removeEventListener(ev, resetTimer));
     };
   }, [appState]);
+
+  // Countdown timer — ticks every second while in 'vote' state
+  useEffect(() => {
     if (appState !== 'vote' || remainingSeconds <= 0) {
       return undefined;
     }

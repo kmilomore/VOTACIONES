@@ -86,12 +86,15 @@ El estado vive en `src/app/page.tsx` como `useState<AppState>('login')`. Cada tr
 ```typescript
 // src/types/index.ts
 
+type Estamento = 'directivos' | 'docentes' | 'asistentes';
+
 interface User {
   rut: string;
   email: string;
   otp: string;
   fullName: string;
   organization: string;
+  estamento: Estamento;       // padrón al que pertenece el votante
 }
 
 interface Candidate {
@@ -101,6 +104,7 @@ interface Candidate {
   slogan: string;
   initials: string;
   accentColor: string;
+  estamento: Estamento;       // padrón al que pertenece el candidato
 }
 
 type AppState = 'login' | 'otp' | 'vote' | 'success';
@@ -110,32 +114,55 @@ type AppState = 'login' | 'otp' | 'vote' | 'success';
 
 ## Mock API (`src/lib/mock-api.ts`)
 
-### Credenciales de prueba
+### Credenciales de prueba por estamento
 
-> Las credenciales ya no se muestran en pantalla ni se exportan en código.
-> Para probar el flujo, consultar directamente `VALID_USER` en `src/lib/mock-api.ts` (solo en entorno de desarrollo).
+> No se muestran en pantalla ni se exportan. Consultar `VALID_USERS` en `src/lib/mock-api.ts` solo en desarrollo.
+
+| Estamento | RUT | Email | OTP |
+|---|---|---|---|
+| Directivos | `12345678-5` | `director@slep.cl` | `111111` |
+| Docentes | `16940271-k` | `docente@slep.cl` | `222222` |
+| Asistentes de la Educación | `19876543-0` | `asistente@slep.cl` | `333333` |
 
 ### Funciones exportadas
 
 | Función | Signatura | Descripción |
 |---|---|---|
-| `verifyUserCredentials` | `(rut, email) → Promise<User>` | Valida RUT + correo contra `VALID_USER`. Lanza error si no coinciden. |
-| `verifyOtpCode` | `(otp) → Promise<string>` | Valida el código OTP. Lanza error si es incorrecto. |
-| `getCandidates` | `() → Promise<Candidate[]>` | Devuelve el array de candidatos. Simula 500ms de latencia. Solo se llama tras OTP exitoso. |
-| `submitVote` | `(candidateId) → Promise<{receiptCode, candidate}>` | Registra el voto. `receiptCode` usa `crypto.randomUUID()`. |
+| `verifyUserCredentials` | `(rut, email) → Promise<User>` | Busca en `VALID_USERS` por RUT + email normalizados. Incluye el `estamento` en el objeto retornado. |
+| `verifyOtpCode` | `(otp, expectedOtp) → Promise<void>` | Valida el OTP contra el del usuario autenticado (pasado como segundo argumento). |
+| `getCandidates` | `(estamento) → Promise<Candidate[]>` | Filtra candidatos por `estamento`. Solo se llama tras OTP exitoso. Simula 500ms de latencia. |
+| `submitVote` | `(candidateId) → Promise<{receiptCode, candidate}>` | Registra el voto. `receiptCode` = `SLEP-{iniciales}-{UUID parcial}`. |
 
 Todas las funciones simulan latencia aleatoria entre 700ms y 1400ms usando `setTimeout`.
 
 ---
 
-## Candidatos registrados
+## Candidatos registrados por estamento
 
-| # | Nombre | Iniciales | Color |
+### Directivos (3 candidatos)
+
+| Nombre | Iniciales | Color | Rol |
 |---|---|---|---|
-| 1 | Marisol Huerta | MH | `#8c4f2f` |
-| 2 | Vianka Mejías | VM | `#355c7d` |
-| 3 | Ximena Pino | XP | `#44633f` |
-| 4 | Jorge Barahona | JB | `#6f4b8b` |
+| Pablo Reyes | PR | `#1a4a7a` | Director establecimiento zona norte |
+| Claudia Fuentes | CF | `#4a1a5a` | Directora establecimiento zona sur |
+| Rodrigo Espinoza | RE | `#1a5a3a` | Jefe de Unidad Técnico-Pedagógica |
+
+### Docentes (4 candidatos)
+
+| Nombre | Iniciales | Color | Rol |
+|---|---|---|---|
+| Marisol Huerta | MH | `#8c4f2f` | Representante de estamento docente |
+| Vianka Mejías | VM | `#355c7d` | Representante de gestión territorial |
+| Ximena Pino | XP | `#44633f` | Representante de convivencia y bienestar |
+| Jorge Barahona | JB | `#6f4b8b` | Representante de innovación pública |
+
+### Asistentes de la Educación (3 candidatos)
+
+| Nombre | Iniciales | Color | Rol |
+|---|---|---|---|
+| Carmen Lagos | CL | `#7a3a1a` | Representante de asistentes zona oriente |
+| Miguel Torres | MT | `#1a6a6a` | Representante técnico-administrativo |
+| Patricia Vera | PV | `#5a4a1a` | Representante de auxiliares de educación |
 
 ---
 
@@ -173,21 +200,49 @@ Todas las funciones simulan latencia aleatoria entre 700ms y 1400ms usando `setT
 | `.modal-backdrop` | Overlay del modal de confirmación (fixed, blur, z-50) |
 | `.modal-panel` | Panel del modal con animación spring de entrada |
 
-### Barra de progreso de pasos
+### Lógica de padrón por estamento
 
-Implementada en `page.tsx` como componente inline (no vista separada). Renderiza los 3 pasos del flujo (Identificacion → Verificacion → Papeleta) con:
+Cada usuario pertenece a un padrón (`estamento`). La papeleta que ve el votante contiene **únicamente los candidatos de su propio padrón**.
+
+**Flujo de datos:**
+1. `verifyUserCredentials` devuelve `User` con `estamento` incluido.
+2. `page.tsx` almacena el `user` completo en estado.
+3. `verifyOtpCode(otp, user.otp)` valida el OTP del usuario específico.
+4. `getCandidates(user.estamento)` filtra y devuelve solo los candidatos del padrón.
+5. `VotingView` recibe `estamento` y muestra el badge "Padrón: Docentes / Directivos / Asistentes".
+
+**Colores por estamento:**
+
+| Estamento | Color |
+|---|---|
+| `directivos` | `#1a4a7a` (azul institucional oscuro) |
+| `docentes` | `#8c4f2f` (café terracota) |
+| `asistentes` | `#1a6a6a` (verde azulado) |
+
+### OtpView — Tarjeta del usuario autenticado
+
+Despues de login exitoso, la vista OTP muestra una tarjeta con:
+- Avatar con iniciales del nombre (2 letras) con color del estamento.
+- Nombre completo + organización.
+- Badge de estamento con color propio (fondo claro, borde, texto del color del estamento).
+
+### VotingView — Badge de padrón en la papeleta
+
+El encabezado de la papeleta muestra el nombre del votante acompañado de un badge "Padrón: {estamento}" con el color del estamento correspondiente, dejando claro a qué papeleta pertenece.
 - Círculos numerados que pasan a checkmark (SVG) al completarse
 - Línea conectora que se rellena en `--color-brand` al avanzar
 - Oculta en el estado `success`
 
-### LoginView — Validación de RUT en tiempo real
+### OtpView — 6 cajas separadas
 
 - Implementa el algoritmo módulo 11 del RUT chileno (`validateRut`) directamente en el componente.
 - Muestra un indicador inline debajo del campo: ✓ verde con formato `12.345.678-9` si es válido, ✗ rojo si el dígito verificador no coincide.
 - Solo se muestra cuando ambos campos (número + dígito) tienen valor.
 - `formatRutNumber` formatea con puntos únicamente en el indicador; el estado interno guarda el número sin puntos.
 
-### OtpView — 6 cajas separadas
+### Barra de progreso de pasos
+
+Implementada en `page.tsx` como componente inline (no vista separada). Renderiza los 3 pasos del flujo (Identificacion → Verificacion → Papeleta) con:
 
 - Reemplaza el input único por 6 campos individuales gestionados con `useRef`.
 - **Auto-avance:** al escribir un dígito el foco pasa al siguiente campo automáticamente.
@@ -197,7 +252,7 @@ Implementada en `page.tsx` como componente inline (no vista separada). Renderiza
 - El botón de submit se deshabilita hasta que los 6 dígitos estén completos.
 - `autoComplete="one-time-code"` en la primera caja para sugerencia del browser.
 
-### VotingView — Modal de confirmación
+### Animaciones de transición entre pasos
 
 - Al hacer clic en «Confirmar voto →» se abre un modal (`.modal-backdrop` + `.modal-panel`) en lugar de enviar directamente.
 - El modal muestra la candidatura seleccionada (badge de color + nombre + rol).
@@ -205,23 +260,21 @@ Implementada en `page.tsx` como componente inline (no vista separada). Renderiza
 - Clic fuera del panel cierra el modal.
 - Estado `showConfirmModal` es local al componente (`useState`).
 
-### Animaciones de transición entre pasos
+### LoginView — Validación de RUT en tiempo real
 
 - `page.tsx` mantiene `transitionDirection: 'forward' | 'back'` en estado.
 - Avanzar (→): aplica `.view-enter-forward` (slide desde la derecha).
 - Retroceder (←): aplica `.view-enter-back` (slide desde la izquierda).
 - `handleBackToLogin` y `handleRestart` setean `'back'` antes del cambio de estado.
 
-### Skeleton loaders con forma exacta
+### VotingView — Modal de confirmación
 
 El skeleton de carga de papeleta replica la geometría real del `VotingView`:
 - Fila superior: bloque de texto (3 líneas) + placeholder rectangular del timer (`120×66px`).
 - Grid de 4 tarjetas: badge circular + línea de nombre (22px) + rol + 2 líneas de slogan.
 - Fila inferior: placeholder del botón «Confirmar voto».
 
----
-
-## Fix de producción — CSP + renderizado dinámico (`layout.tsx`)
+### Skeleton loaders con forma exacta — CSP + renderizado dinámico (`layout.tsx`)
 
 **Problema:** en Vercel los chunks `_next/static/chunks/*.js` eran bloqueados por CSP porque Next.js los inyectaba en el HTML sin el atributo `nonce`.
 
@@ -231,7 +284,7 @@ El skeleton de carga de papeleta replica la geometría real del `VotingView`:
 
 ---
 
-## Seguridad implementada (Fases 1b + 2d)
+## Fix de producción (Fases 1b + 2d)
 
 ### Headers HTTP
 
@@ -303,6 +356,8 @@ Gestionados en dos capas:
 - **No llamar `getCandidates()` en el mont inicial** — solo debe llamarse tras OTP exitoso.
 - **No bypassear el rate limiter** deshabilitando el middleware en rutas sensibles.
 - **No guardar el RUT con puntos en el estado** — el formato con puntos es solo para visualización en el indicador.
+- **No pasar candidatos de un estamento a la vista de otro** — `getCandidates` recibe siempre `user.estamento`; nunca usar la lista global `candidates` directamente en la UI.
+- **No reutilizar el mismo OTP para todos los usuarios** — `verifyOtpCode` recibe `user.otp` como segundo argumento; nunca comparar contra una constante global.
 
 ---
 
@@ -334,6 +389,7 @@ Gestionados en dos capas:
 | Fase 2b | Mejoras visuales: barra de progreso, skeletons, spinners, animaciones, escudo SVG, SuccessView rediseñada, role/slogan en candidatos, timer con urgencia | ✅ Completado |
 | Fase 2c | UX avanzado: validador RUT en tiempo real, OTP 6 cajas, modal de confirmación, transiciones slide, skeletons exactos, fix CSP Vercel | ✅ Completado |
 | Fase 2d | Seguridad avanzada: rate limiting por IP, CSP report-uri, COOP/CORP headers, Permissions-Policy extendida, allowlist inputs, expiración por inactividad | ✅ Completado |
+| Fase 2e | Padrones por estamento: 3 usuarios ficticios, candidatos por padrón, OtpView con tarjeta de usuario, VotingView con badge de padrón, filtro dinámico de papeleta | ✅ Completado |
 | Fase 3 | Backend: autenticación real, envío de correo, base de datos | ⬜ Pendiente |
 | Fase 4 | Despliegue en producción (Vercel + BD serverless) | ⬜ Pendiente |
 
