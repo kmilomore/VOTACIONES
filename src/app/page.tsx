@@ -35,6 +35,7 @@ export default function HomePage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isLoadingCandidates, setIsLoadingCandidates] = useState(false);
+  const [transitionDirection, setTransitionDirection] = useState<'forward' | 'back'>('forward');
 
   useEffect(() => {
     if (appState !== 'vote' || remainingSeconds <= 0) {
@@ -64,6 +65,7 @@ export default function HomePage() {
       const authenticatedUser = await verifyUserCredentials(rut, email);
       setUser(authenticatedUser);
       setOtpAttempts(0);
+      setTransitionDirection('forward');
       setAppState('otp');
       setOtp('');
     } catch (error) {
@@ -113,6 +115,7 @@ export default function HomePage() {
       setCandidates(availableCandidates);
       setRemainingSeconds(VOTING_WINDOW_SECONDS);
       setSelectedCandidateId(null);
+      setTransitionDirection('forward');
       setAppState('vote');
     } catch {
       setErrorMessage('No fue posible cargar la papeleta en este momento.');
@@ -140,6 +143,7 @@ export default function HomePage() {
       const result = await submitVote(selectedCandidateId);
       setReceiptCode(result.receiptCode);
       setConfirmedCandidateName(result.candidate.name);
+      setTransitionDirection('forward');
       setAppState('success');
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'No fue posible registrar el voto.');
@@ -149,6 +153,7 @@ export default function HomePage() {
   }
 
   function handleRestart() {
+    setTransitionDirection('back');
     setAppState('login');
     setRutNumber('');
     setRutVerifier('');
@@ -166,6 +171,7 @@ export default function HomePage() {
   }
 
   function handleBackToLogin() {
+    setTransitionDirection('back');
     setAppState('login');
     setOtp('');
     setUser(null);
@@ -246,7 +252,7 @@ export default function HomePage() {
             </div>
           ) : null}
 
-          <div key={appState} className="view-enter">
+          <div key={appState} className={transitionDirection === 'forward' ? 'view-enter-forward' : 'view-enter-back'}>
             {appState === 'login' ? (
               <LoginView
                 rutNumber={rutNumber}
@@ -279,20 +285,27 @@ export default function HomePage() {
               isLoadingCandidates ? (
                 <section className="rounded-2xl bg-white/95 border border-slate-900/10 p-5">
                   <div className="grid gap-4">
-                    <div className="grid gap-2.5 pb-4 border-b border-slate-900/[0.08]">
-                      <div className="skeleton h-3 w-28 rounded-full" />
-                      <div className="skeleton h-7 w-44 rounded-lg" />
-                      <div className="skeleton h-4 w-56 rounded" />
+                    <div className="flex gap-3 justify-between items-start pb-4 border-b border-slate-900/[0.08]">
+                      <div className="grid gap-2.5 min-w-0 flex-1">
+                        <div className="skeleton h-2.5 w-24 rounded-full" />
+                        <div className="skeleton h-6 w-36 rounded-lg" />
+                        <div className="skeleton h-4 w-52 rounded" />
+                      </div>
+                      <div className="skeleton shrink-0 w-[120px] h-[66px] rounded-2xl" />
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                       {[0, 1, 2, 3].map((i) => (
                         <div key={i} className="p-3.5 rounded-2xl border border-slate-100 grid gap-2.5">
                           <div className="skeleton w-11 h-11 rounded-full" />
-                          <div className="skeleton h-4 w-3/4 rounded" />
-                          <div className="skeleton h-3 w-1/2 rounded" />
-                          <div className="skeleton h-3 w-5/6 rounded" />
+                          <div className="skeleton h-[22px] w-4/5 rounded-md" />
+                          <div className="skeleton h-3.5 w-3/5 rounded" />
+                          <div className="skeleton h-3 w-full rounded" />
+                          <div className="skeleton h-3 w-2/3 rounded" />
                         </div>
                       ))}
+                    </div>
+                    <div className="flex justify-end">
+                      <div className="skeleton h-11 w-36 rounded-xl" />
                     </div>
                   </div>
                 </section>

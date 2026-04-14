@@ -1,3 +1,7 @@
+'use client';
+
+import React, { useState } from 'react';
+
 import type { Candidate } from '@/types';
 
 interface VotingViewProps {
@@ -29,7 +33,16 @@ export function VotingView({
   onSelectCandidate,
   onSubmitVote,
 }: VotingViewProps) {
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const selectedCandidate = candidates.find((c) => c.id === selectedCandidateId) ?? null;
+
+  function handleConfirmClick() {
+    if (!selectedCandidateId || hasExpired) return;
+    setShowConfirmModal(true);
+  }
+
   return (
+    <>
     <section className="rounded-2xl bg-white/95 backdrop-blur-sm border border-slate-900/10 text-ink p-5">
       {/* Header row: title + timer */}
       <div className="flex gap-3 justify-between items-start mb-4 pb-4 border-b border-slate-900/[0.08]">
@@ -109,12 +122,64 @@ export function VotingView({
         <button
           className="inline-flex items-center justify-center h-11 px-6 rounded-xl bg-brand text-white font-sans text-sm font-bold tracking-wide shadow-[0_4px_14px_rgba(11,66,120,0.36),inset_0_1px_0_rgba(255,255,255,0.12)] hover:bg-brand-mid hover:-translate-y-px active:translate-y-0 disabled:opacity-45 disabled:cursor-not-allowed transition-all duration-150"
           type="button"
-          onClick={onSubmitVote}
+          onClick={handleConfirmClick}
           disabled={hasExpired || isSubmitting || !selectedCandidateId}
         >
           {isSubmitting ? <><span className="btn-spinner mr-2" />Registrando…</> : 'Confirmar voto →'}
         </button>
       </div>
     </section>
-  );
+      {showConfirmModal && selectedCandidate ? (
+        <div
+          className="modal-backdrop"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="modal-title"
+          onClick={(e) => { if (e.target === e.currentTarget) setShowConfirmModal(false); }}
+        >
+          <div className="modal-panel">
+            <div className="p-5 border-b border-slate-900/[0.08]">
+              <h2 id="modal-title" className="m-0 font-serif text-[20px] text-ink leading-tight tracking-tight">
+                Confirma tu voto
+              </h2>
+              <p className="mt-1.5 mb-0 text-sm text-ink-muted font-sans">
+                Esta accion no se puede deshacer.
+              </p>
+            </div>
+            <div className="p-5 grid gap-4">
+              <div
+                className="flex items-center gap-3 p-3.5 rounded-2xl bg-slate-50 border border-slate-900/[0.08]"
+                style={{ ['--accent' as string]: selectedCandidate.accentColor }}
+              >
+                <span className="candidate-badge inline-grid place-items-center w-11 h-11 rounded-full text-[15px] shrink-0">
+                  {selectedCandidate.initials}
+                </span>
+                <div className="min-w-0">
+                  <p className="m-0 font-serif font-bold text-[16px] text-ink leading-tight">{selectedCandidate.name}</p>
+                  <p className="m-0 mt-0.5 font-sans text-[11px] text-ink-muted leading-tight">{selectedCandidate.role}</p>
+                </div>
+              </div>
+              <div className="flex gap-2.5">
+                <button
+                  className="flex-1 inline-flex items-center justify-center h-11 px-4 rounded-xl bg-white text-ink-mid font-sans text-sm font-bold border-[1.5px] border-slate-900/[0.14] hover:bg-slate-50 transition-all duration-150 disabled:opacity-45"
+                  type="button"
+                  onClick={() => setShowConfirmModal(false)}
+                  disabled={isSubmitting}
+                >
+                  Cancelar
+                </button>
+                <button
+                  className="flex-1 inline-flex items-center justify-center h-11 px-5 rounded-xl bg-brand text-white font-sans text-sm font-bold tracking-wide shadow-[0_4px_14px_rgba(11,66,120,0.36)] hover:bg-brand-mid transition-all duration-150 disabled:opacity-45 disabled:cursor-not-allowed"
+                  type="button"
+                  onClick={() => { setShowConfirmModal(false); onSubmitVote(); }}
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? <><span className="btn-spinner mr-2" />Registrando…</> : 'Emitir voto →'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </>  );
 }

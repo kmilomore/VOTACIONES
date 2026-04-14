@@ -1,3 +1,23 @@
+function validateRut(number: string, verifier: string): 'valid' | 'invalid' | 'empty' {
+  if (!number || !verifier) return 'empty';
+  const digits = number.split('').reverse().map(Number);
+  const multipliers = [2, 3, 4, 5, 6, 7];
+  const sum = digits.reduce((acc, d, i) => acc + d * multipliers[i % multipliers.length], 0);
+  const remainder = 11 - (sum % 11);
+  const expected = remainder === 11 ? '0' : remainder === 10 ? 'K' : String(remainder);
+  return verifier.toUpperCase() === expected ? 'valid' : 'invalid';
+}
+
+function formatRutNumber(raw: string): string {
+  if (raw.length <= 3) return raw;
+  const rev = raw.split('').reverse();
+  const groups: string[] = [];
+  for (let i = 0; i < rev.length; i += 3) {
+    groups.push(rev.slice(i, i + 3).join(''));
+  }
+  return groups.join('.').split('').reverse().join('');
+}
+
 const inputClass =
   'w-full h-11 px-3.5 rounded-xl border-[1.5px] border-slate-900/[0.14] bg-white text-ink font-sans text-[15px] transition-all duration-150 focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/15 placeholder:text-ink-muted/50';
 
@@ -28,6 +48,8 @@ export function LoginView({
   onEmailChange,
   onSubmit,
 }: LoginViewProps) {
+  const rutStatus = validateRut(rutNumber, rutVerifier);
+
   return (
     <section className="rounded-2xl bg-white/95 backdrop-blur-sm border border-slate-900/10 text-ink p-5">
       <div className="mb-4 pb-4 border-b border-slate-900/[0.08]">
@@ -66,6 +88,27 @@ export function LoginView({
               required
             />
           </div>
+          {rutStatus !== 'empty' ? (
+            <p className={`m-0 flex items-center gap-1.5 text-[12px] font-sans font-medium ${rutStatus === 'valid' ? 'text-emerald-600' : 'text-red-500'}`}>
+              {rutStatus === 'valid' ? (
+                <>
+                  <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true">
+                    <circle cx="6.5" cy="6.5" r="6" stroke="currentColor" strokeWidth="1.3" />
+                    <path d="M3.5 6.5l2 2 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                  {formatRutNumber(rutNumber)}-{rutVerifier.toUpperCase()} — RUT v&#225;lido
+                </>
+              ) : (
+                <>
+                  <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true">
+                    <circle cx="6.5" cy="6.5" r="6" stroke="currentColor" strokeWidth="1.3" />
+                    <path d="M4.5 4.5l4 4M8.5 4.5l-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                  </svg>
+                  D&#237;gito verificador incorrecto
+                </>
+              )}
+            </p>
+          ) : null}
         </div>
 
         <label className="grid gap-2">
