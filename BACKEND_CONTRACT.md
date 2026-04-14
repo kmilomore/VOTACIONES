@@ -138,29 +138,31 @@ El frontend actualmente no gestiona tokens (fase mock). Al integrar el backend, 
 
 | Área | Requisito |
 |---|---|
-| **Rate limiting** | Mínimo: 5 intentos fallidos de login por RUT en 15 min. 3 intentos fallidos de OTP por sesión. 1 voto por usuario registrado. |
+| **Rate limiting** | Mínimo: 5 intentos fallidos de login por RUT en 15 min. 3 intentos fallidos de OTP por sesión. 1 voto por usuario registrado. El frontend ya aplica estos límites a nivel de UI como primera línea; el backend es la fuente de verdad. |
 | **OTP** | Expiración: máximo 10 minutos. Un solo uso (invalidar tras verificación exitosa). Generación criptográficamente segura (`crypto.randomInt` o equivalente). |
 | **Voto único** | Verificar en BD que el `userId` no ha votado antes de registrar. La verificación debe ser atómica (transacción). |
 | **Logging de auditoría** | Registrar IP, timestamp y `userId` de cada evento: login intentado, OTP enviado, voto emitido. Sin registrar el valor del voto (secreto). |
-| **HTTPS** | Obligatorio en producción. Agregar `Strict-Transport-Security` en el servidor de producción. |
+| **HTTPS** | Obligatorio en producción. El frontend ya envía `Strict-Transport-Security: max-age=31536000; includeSubDomains; preload`. |
 | **CORS** | Configurar el origen exacto del frontend. No usar `*`. |
-| **Códigos de comprobante** | Generar `receiptCode` con UUID v4 o similar — no timestamp como en el mock. |
+| **Códigos de comprobante** | Generar `receiptCode` con UUID v4 o similar. El mock ya usa `crypto.randomUUID()` como referencia. |
+| **CSP** | El frontend implementa CSP nonce-based vía middleware Edge. Si el backend sirve el HTML directamente, debe propagar el nonce vía cabecera `x-nonce`. |
 
 ---
 
-## Items que el equipo frontend eliminará antes de producción
+## Items pendientes del equipo frontend antes de producción
 
-Los archivos marcados con `// TODO(backend-integration):` en el código indican qué debe cambiarse. Resumen:
+Los ítems ya completados en Fase 1b están marcados. Los restantes requieren integración con el backend real.
 
-| Archivo | Cambio pendiente |
-|---|---|
-| `src/app/page.tsx` | Eliminar `handleRestart` con credenciales pre-cargadas; reemplazar con campos vacíos |
-| `src/app/page.tsx` | Actualizar texto de `stage-card__description` a copy real (sin mención de "datos simulados") |
-| `src/components/views/LoginView.tsx` | Eliminar chip de hint con RUT y correo de prueba |
-| `src/components/views/OtpView.tsx` | Eliminar chip de hint con OTP de prueba |
-| `src/lib/mock-api.ts` | **Eliminar** todo el archivo. Reemplazar las importaciones en `page.tsx` con llamadas `fetch` reales |
-| `src/types/index.ts` | Mantener interfaces; ajustar si el backend devuelve campos adicionales o distintos |
-| `next.config.mjs` | En CSP: reemplazar `'unsafe-inline'` / `'unsafe-eval'` en `script-src` con nonce via middleware de Next.js |
+| Archivo | Cambio | Estado |
+|---|---|---|
+| `src/app/page.tsx` | `handleRestart` limpia campos en blanco (sin pre-relleno) | ✅ Hecho |
+| `src/app/page.tsx` | Actualizar texto del banner a copy real (sin "datos simulados") | ⏳ Pendiente (Fase 3) |
+| `src/components/views/LoginView.tsx` | Chip de hint eliminado | ✅ Hecho |
+| `src/components/views/OtpView.tsx` | Chip de hint eliminado | ✅ Hecho |
+| `src/lib/mock-api.ts` | **Eliminar** todo el archivo. Reemplazar con llamadas `fetch` reales | ⏳ Pendiente (Fase 3) |
+| `src/types/index.ts` | Mantener interfaces; ajustar si el backend devuelve campos adicionales | ⏳ Pendiente (Fase 3) |
+| `next.config.mjs` | CSP movida al middleware con nonce | ✅ Hecho |
+| `next.config.mjs` | HSTS agregado | ✅ Hecho |
 
 ---
 

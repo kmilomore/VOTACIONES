@@ -7,7 +7,6 @@ import { OtpView } from '@/components/views/OtpView';
 import { SuccessView } from '@/components/views/SuccessView';
 import { VotingView } from '@/components/views/VotingView';
 import {
-  demoCredentials,
   getCandidates,
   submitVote,
   verifyOtpCode,
@@ -16,6 +15,8 @@ import {
 import type { AppState, Candidate, User } from '@/types';
 
 const VOTING_WINDOW_SECONDS = 120;
+const MAX_LOGIN_ATTEMPTS = 5;
+const MAX_OTP_ATTEMPTS = 3;
 
 export default function HomePage() {
   const [appState, setAppState] = useState<AppState>('login');
@@ -29,24 +30,11 @@ export default function HomePage() {
   const [receiptCode, setReceiptCode] = useState('');
   const [confirmedCandidateName, setConfirmedCandidateName] = useState('');
   const [remainingSeconds, setRemainingSeconds] = useState(VOTING_WINDOW_SECONDS);
+  const [loginAttempts, setLoginAttempts] = useState(0);
+  const [otpAttempts, setOtpAttempts] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [isLoadingCandidates, setIsLoadingCandidates] = useState(true);
-
-  useEffect(() => {
-    async function loadCandidates() {
-      try {
-        const availableCandidates = await getCandidates();
-        setCandidates(availableCandidates);
-      } catch {
-        setErrorMessage('No fue posible cargar la papeleta en este momento.');
-      } finally {
-        setIsLoadingCandidates(false);
-      }
-    }
-
-    void loadCandidates();
-  }, []);
+  const [isLoadingCandidates, setIsLoadingCandidates] = useState(false);
 
   useEffect(() => {
     if (appState !== 'vote' || remainingSeconds <= 0) {
@@ -63,6 +51,8 @@ export default function HomePage() {
   }, [appState, remainingSeconds]);
 
   const hasExpired = remainingSeconds <= 0;
+  const isLoginLocked = loginAttempts >= MAX_LOGIN_ATTEMPTS;
+  const isOtpLocked = otpAttempts >= MAX_OTP_ATTEMPTS;
   const rut = rutNumber && rutVerifier ? `${rutNumber}-${rutVerifier}` : rutNumber;
 
   async function handleLoginSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -73,10 +63,17 @@ export default function HomePage() {
     try {
       const authenticatedUser = await verifyUserCredentials(rut, email);
       setUser(authenticatedUser);
+      setOtpAttempts(0);
       setAppState('otp');
       setOtp('');
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : 'No fue posible validar la identidad.');
+      const nextAttempts = loginAttempts + 1;
+      setLoginAttempts(nextAttempts);
+      setErrorMessage(
+        nextAttempts >= MAX_LOGIN_ATTEMPTS
+          ? 'Demasiados intentos fallidos. Recarga la pagina para continuar.'
+          : error instanceof Error ? error.message : 'No fue posible validar la identidad.',
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -87,15 +84,40 @@ export default function HomePage() {
     setErrorMessage(null);
     setIsSubmitting(true);
 
+    // Step 1: verify OTP code
     try {
       await verifyOtpCode(otp);
-      setOtp(''); // clear OTP from memory after successful verification
+    } catch (error) {
+      const nextAttempts = otpAttempts + 1;
+      if (nextAttempts >= MAX_OTP_ATTEMPTS) {
+        // Force back to login after too many failed OTP attempts
+        setOtp('');
+        setUser(null);
+        setOtpAttempts(0);
+        setLoginAttempts(0);
+        setAppState('login');
+        setErrorMessage('Demasiados intentos fallidos de OTP. Reinicia el proceso de autenticacion.');
+      } else {
+        setOtpAttempts(nextAttempts);
+        setErrorMessage(error instanceof Error ? error.message : 'No fue posible validar el OTP.');
+      }
+      setIsSubmitting(false);
+      return;
+    }
+
+    // Step 2: load candidates only after successful OTP
+    setOtp('');
+    setIsLoadingCandidates(true);
+    try {
+      const availableCandidates = await getCandidates();
+      setCandidates(availableCandidates);
       setRemainingSeconds(VOTING_WINDOW_SECONDS);
       setSelectedCandidateId(null);
       setAppState('vote');
-    } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : 'No fue posible validar el OTP.');
+    } catch {
+      setErrorMessage('No fue posible cargar la papeleta en este momento.');
     } finally {
+      setIsLoadingCandidates(false);
       setIsSubmitting(false);
     }
   }
@@ -126,25 +148,29 @@ export default function HomePage() {
     }
   }
 
-  // TODO(backend-integration): remove demo pre-fill — reset to empty strings in production
   function handleRestart() {
-    const [demoRutNum, demoRutVerif = ''] = demoCredentials.rut.split('-');
     setAppState('login');
-    setRutNumber(demoRutNum);
-    setRutVerifier(demoRutVerif);
-    setEmail(demoCredentials.email);
+    setRutNumber('');
+    setRutVerifier('');
+    setEmail('');
     setOtp('');
     setUser(null);
+    setCandidates([]);
     setSelectedCandidateId(null);
     setReceiptCode('');
     setConfirmedCandidateName('');
     setRemainingSeconds(VOTING_WINDOW_SECONDS);
     setErrorMessage(null);
+    setLoginAttempts(0);
+    setOtpAttempts(0);
   }
 
   function handleBackToLogin() {
     setAppState('login');
     setOtp('');
+    setUser(null);
+    setLoginAttempts(0);
+    setOtpAttempts(0);
     setErrorMessage(null);
   }
 
@@ -181,6 +207,7 @@ export default function HomePage() {
               rutVerifier={rutVerifier}
               email={email}
               isSubmitting={isSubmitting}
+              isLocked={isLoginLocked}
               errorMessage={errorMessage}
               onRutNumberChange={setRutNumber}
               onRutVerifierChange={setRutVerifier}
@@ -194,6 +221,7 @@ export default function HomePage() {
               email={email}
               otp={otp}
               isSubmitting={isSubmitting}
+              isLocked={isOtpLocked}
               errorMessage={errorMessage}
               onOtpChange={setOtp}
               onBack={handleBackToLogin}

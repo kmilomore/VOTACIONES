@@ -2,6 +2,7 @@ interface OtpViewProps {
   email: string;
   otp: string;
   isSubmitting: boolean;
+  isLocked: boolean;
   errorMessage: string | null;
   onOtpChange: (value: string) => void;
   onBack: () => void;
@@ -12,6 +13,7 @@ export function OtpView({
   email,
   otp,
   isSubmitting,
+  isLocked,
   errorMessage,
   onOtpChange,
   onBack,
@@ -29,11 +31,7 @@ export function OtpView({
         <p className="mt-2 mb-0 text-sm text-ink-muted font-sans leading-relaxed">
           Enviamos un codigo de 6 digitos a <strong>{email}</strong>. Ingrésalo a continuacion.
         </p>
-        {/* TODO(backend-integration): remove demo hint before production */}
-        <p className="inline-flex items-center gap-1.5 mt-3 mb-0 px-3 py-1.5 rounded-full bg-blue-50/60 border border-blue-100 text-brand-mid text-xs font-semibold font-sans">
-          <span className="opacity-60 text-[10px]">▸</span>
-          Demo: codigo es 123456
-        </p>
+
       </div>
 
       <form className="grid gap-3.5" onSubmit={onSubmit}>
@@ -63,14 +61,14 @@ export function OtpView({
             className="inline-flex items-center justify-center h-11 px-4 rounded-xl bg-white text-ink-mid font-sans text-sm font-bold border-[1.5px] border-slate-900/[0.14] shadow-sm hover:bg-slate-50 hover:-translate-y-px active:translate-y-0 disabled:opacity-45 disabled:cursor-not-allowed transition-all duration-150"
             type="button"
             onClick={onBack}
-            disabled={isSubmitting}
+            disabled={isSubmitting || isLocked}
           >
             ← Volver
           </button>
           <button
             className="flex-1 inline-flex items-center justify-center h-11 px-5 rounded-xl bg-brand text-white font-sans text-sm font-bold tracking-wide shadow-[0_4px_14px_rgba(11,66,120,0.36),inset_0_1px_0_rgba(255,255,255,0.12)] hover:bg-brand-mid hover:-translate-y-px active:translate-y-0 disabled:opacity-45 disabled:cursor-not-allowed transition-all duration-150"
             type="submit"
-            disabled={isSubmitting}
+            disabled={isSubmitting || isLocked}
           >
             {isSubmitting ? 'Verificando…' : 'Acceder a la papeleta →'}
           </button>

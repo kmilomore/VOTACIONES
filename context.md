@@ -54,8 +54,13 @@ src/
 Archivos raíz relevantes:
 ```
 fondo.webp          # Imagen de fondo institucional (ciudad Santiago)
-next.config.mjs     # Configuración de Next.js
+next.config.mjs     # Configuración de Next.js — headers estáticos (HSTS, X-Frame, etc.)
 tsconfig.json       # Configuración TypeScript estricta con alias @/*
+```
+
+Middleware:
+```
+src/middleware.ts   # CSP nonce-based por request; se ejecuta en el Edge Runtime
 ```
 
 ---
@@ -69,6 +74,10 @@ tsconfig.json       # Configuración TypeScript estricta con alias @/*
 ```
 
 El estado vive en `src/app/page.tsx` como `useState<AppState>('login')`. Cada transición se produce solo si la llamada a `mock-api` resuelve sin error.
+
+**Límites de intentos:**
+- Login: máximo 5 intentos fallidos → formulario bloqueado
+- OTP: máximo 3 intentos fallidos → regreso forzado a login
 
 ---
 
@@ -103,11 +112,8 @@ type AppState = 'login' | 'otp' | 'vote' | 'success';
 
 ### Credenciales de prueba
 
-| Campo | Valor |
-|---|---|
-| RUT | `12345678-9` |
-| Correo | `usuario@slep.cl` |
-| OTP | `123456` |
+> Las credenciales ya no se muestran en pantalla ni se exportan en código.
+> Para probar el flujo, consultar directamente `VALID_USER` en `src/lib/mock-api.ts` (solo en entorno de desarrollo).
 
 ### Funciones exportadas
 
@@ -115,9 +121,8 @@ type AppState = 'login' | 'otp' | 'vote' | 'success';
 |---|---|---|
 | `verifyUserCredentials` | `(rut, email) → Promise<User>` | Valida RUT + correo contra `VALID_USER`. Lanza error si no coinciden. |
 | `verifyOtpCode` | `(otp) → Promise<string>` | Valida el código OTP. Lanza error si es incorrecto. |
-| `getCandidates` | `() → Promise<Candidate[]>` | Devuelve el array de candidatos. Simula 500ms de latencia. |
-| `submitVote` | `(candidateId) → Promise<{receiptCode, candidate}>` | Registra el voto y devuelve código de comprobante. |
-| `demoCredentials` | objeto | Expone RUT, correo y OTP de prueba para el botón "Reiniciar demo". |
+| `getCandidates` | `() → Promise<Candidate[]>` | Devuelve el array de candidatos. Simula 500ms de latencia. Solo se llama tras OTP exitoso. |
+| `submitVote` | `(candidateId) → Promise<{receiptCode, candidate}>` | Registra el voto. `receiptCode` usa `crypto.randomUUID()`. |
 
 Todas las funciones simulan latencia aleatoria entre 700ms y 1400ms usando `setTimeout`.
 
@@ -167,6 +172,38 @@ Todas las funciones simulan latencia aleatoria entre 700ms y 1400ms usando `setT
 
 ---
 
+## Seguridad implementada (Fase 1b)
+
+### Headers HTTP
+
+Gestionados en dos capas:
+
+| Capa | Archivo | Headers |
+|---|---|---|
+| Estáticos | `next.config.mjs` | `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`, `Strict-Transport-Security` |
+| Dinámicos | `src/middleware.ts` | `Content-Security-Policy` (nonce por request) |
+
+### Content Security Policy
+
+- En **desarrollo**: `unsafe-inline` + `unsafe-eval` para compatibilidad con Fast Refresh de Next.js.
+- En **producción**: `nonce-{nonce} + strict-dynamic`. Nonce generado con `crypto.randomUUID()` por cada request en el middleware Edge.
+
+### Rate limiting frontend
+
+| Flujo | Máximo de intentos | Consecuencia |
+|---|---|---|
+| Login (RUT + email) | 5 intentos fallidos | Formulario bloqueado (`isLocked=true`) |
+| OTP | 3 intentos fallidos | Regreso forzado a login + reseteo de estado |
+
+### Integridad del estado
+
+- `getCandidates()` solo se invoca tras verificación OTP exitosa (no en mount inicial).
+- Al retroceder desde OTP, se limpian `otp`, `user` y ambos contadores.
+- `handleRestart()` limpia todos los campos — sin pre-relleno de credenciales de prueba.
+- `receiptCode` usa `crypto.randomUUID()` — no timestamp predecible.
+
+---
+
 ## Temporizador de votación
 
 - Duración: **120 segundos**
@@ -180,8 +217,9 @@ Todas las funciones simulan latencia aleatoria entre 700ms y 1400ms usando `setT
 
 | Fase | Descripción | Estado |
 |---|---|---|
-| Fase 1 | Frontend con mock data — validación UX y diseño | ✅ En curso |
-| Fase 2 | Testing (Playwright / React Testing Library) | ⬜ Pendiente |
+| Fase 1 | Frontend con mock data — validación UX y diseño | ✅ Completado |
+| Fase 1b | Auditoría de seguridad frontend (CSP nonce, HSTS, rate limiting, receiptCode seguro) | ✅ Completado |
+| Fase 2 | Testing (Vitest + RTL unit tests · Playwright E2E) | ✅ Completado |
 | Fase 3 | Backend: autenticación real, envío de correo, base de datos | ⬜ Pendiente |
 | Fase 4 | Despliegue en producción (Vercel + BD serverless) | ⬜ Pendiente |
 

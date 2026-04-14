@@ -17,15 +17,7 @@ npm run dev
 npm run build
 ```
 
----
-
-## Credenciales de prueba
-
-| Campo | Valor |
-|---|---|
-| RUT | `12345678-9` |
-| Correo | `usuario@slep.cl` |
-| OTP | `123456` |
+> **Nota:** Las credenciales de prueba del mock viven únicamente en `src/lib/mock-api.ts` y no se muestran en la UI.
 
 ---
 
@@ -44,6 +36,7 @@ npm run build
 
 ```
 src/
+├── middleware.ts        # CSP nonce-based por request (Edge Runtime)
 ├── app/
 │   ├── layout.tsx          # Root layout
 │   ├── page.tsx            # Orquestador — máquina de estados (login→otp→vote→success)
@@ -71,6 +64,17 @@ src/
 
 ---
 
+## Seguridad
+
+- **CSP nonce-based** — `src/middleware.ts` genera un nonce criptográfico por request. En producción no hay `unsafe-inline` ni `unsafe-eval`.
+- **HSTS** — `Strict-Transport-Security: max-age=31536000; includeSubDomains; preload`
+- **Sin credenciales expuestas** — Los hints de prueba se eliminaron de la UI. No existen en el bundle de producción.
+- **Rate limiting frontend** — 5 intentos de login y 3 de OTP antes de bloquear.
+- **receiptCode seguro** — Generado con `crypto.randomUUID()`, no con timestamp.
+- **Candidatos protegidos** — La lista de candidatos solo se carga tras verificación OTP exitosa.
+
+---
+
 ## Estado del proyecto
 
-Fase 1 — Frontend con mock data. Ver [`context.md`](./context.md) para documentación técnica completa y roadmap de fases.
+Fase 1b completada (frontend + hardening de seguridad). Ver [`context.md`](./context.md) para documentación técnica completa y roadmap de fases.

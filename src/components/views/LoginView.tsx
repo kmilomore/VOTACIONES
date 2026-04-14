@@ -8,6 +8,7 @@ interface LoginViewProps {
   rutVerifier: string;
   email: string;
   isSubmitting: boolean;
+  isLocked: boolean;
   errorMessage: string | null;
   onRutNumberChange: (value: string) => void;
   onRutVerifierChange: (value: string) => void;
@@ -20,6 +21,7 @@ export function LoginView({
   rutVerifier,
   email,
   isSubmitting,
+  isLocked,
   errorMessage,
   onRutNumberChange,
   onRutVerifierChange,
@@ -38,11 +40,7 @@ export function LoginView({
         <p className="mt-2 mb-0 text-sm text-ink-muted font-sans leading-relaxed">
           Ingresa tu RUT y correo institucional registrado en el padron del Consejo Local.
         </p>
-        {/* TODO(backend-integration): remove demo hint before production */}
-        <p className="inline-flex items-center gap-1.5 mt-3 mb-0 px-3 py-1.5 rounded-full bg-blue-50/60 border border-blue-100 text-brand-mid text-xs font-semibold font-sans">
-          <span className="opacity-60 text-[10px]">▸</span>
-          Demo: 12345678 – 9 | usuario@slep.cl
-        </p>
+
       </div>
 
       <form className="grid gap-3.5" onSubmit={onSubmit}>
@@ -96,7 +94,7 @@ export function LoginView({
         <button
           className="inline-flex items-center justify-center w-full h-11 px-5 rounded-xl bg-brand text-white font-sans text-sm font-bold tracking-wide shadow-[0_4px_14px_rgba(11,66,120,0.36),inset_0_1px_0_rgba(255,255,255,0.12)] hover:bg-brand-mid hover:shadow-[0_6px_20px_rgba(11,66,120,0.44)] hover:-translate-y-px active:translate-y-0 disabled:opacity-45 disabled:cursor-not-allowed transition-all duration-150"
           type="submit"
-          disabled={isSubmitting}
+          disabled={isSubmitting || isLocked}
         >
           {isSubmitting ? 'Validando…' : 'Continuar →'}
         </button>

@@ -105,13 +105,7 @@ export async function submitVote(candidateId: string): Promise<{ receiptCode: st
   }
 
   return {
-    receiptCode: `SLEP-${candidate.initials}-${Date.now().toString().slice(-6)}`,
+    receiptCode: `SLEP-${candidate.initials}-${crypto.randomUUID().split('-')[0].toUpperCase()}`,
     candidate,
   };
 }
-
-export const demoCredentials = {
-  rut: VALID_USER.rut,
-  email: VALID_USER.email,
-  otp: VALID_USER.otp,
-};
