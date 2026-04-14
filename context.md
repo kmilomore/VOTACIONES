@@ -43,8 +43,8 @@ src/
 │   └── views/              # Vistas aisladas, una por cada estado del flujo
 │       ├── LoginView.tsx   # Paso 1: RUT (número + dígito verificador) + email
 │       ├── OtpView.tsx     # Paso 2: código OTP de 6 dígitos
-│       ├── VotingView.tsx  # Paso 3: papeleta + temporizador 120s
-│       └── SuccessView.tsx # Paso 4: confirmación + código de comprobante
+        ├── VotingView.tsx  # Paso 3: papeleta + temporizador 120s con alertas de urgencia
+        └── SuccessView.tsx # Paso 4: confirmación animada + código de comprobante
 ├── lib/
 │   └── mock-api.ts         # Simulación de backend — usuarios, candidatos, OTP
 └── types/
@@ -161,14 +161,26 @@ Todas las funciones simulan latencia aleatoria entre 700ms y 1400ms usando `setT
 
 | Clase | Descripción |
 |---|---|
-| `.shell` | Wrapper raíz con fondo `fondo.webp` |
-| `.stage-card` | Contenedor modal central (max 560px) |
-| `.stage-card__intro` | Banda azul institucional con título del portal |
-| `.panel` | Tarjeta blanca interior para cada vista |
-| `.step-chip` | Badge de progreso "Paso N de 3" |
-| `.rut-group` | Grid de 3 columnas: número, guion, dígito verificador |
-| `.candidate-card` | Tarjeta de candidato seleccionable |
-| `.button--primary` | Botón azul institucional ancho completo |
+| `.bg-portal` | Wrapper raíz con fondo `fondo.webp` |
+| `.otp-input` | Input OTP monoespaciado con tracking amplio |
+| `.candidate-badge` | Badge circular con color de acento del candidato (`color-mix`) |
+| `.candidate-selected` | Estado seleccionado de tarjeta de candidato |
+| `.view-enter` | Animación `fade-slide-in` al montar cada vista (0.22s ease-out) |
+| `.skeleton` | Shimmer animado para skeleton loaders (1.4s infinito) |
+| `.btn-spinner` | Spinner SVG circular para estado de carga en botones |
+| `.check-circle` | Contenedor del check con animación `scale` de entrada |
+| `.check-path` | Trazo SVG del check con animación `stroke-dashoffset` |
+
+### Barra de progreso de pasos
+
+Implementada en `page.tsx` como componente inline (no vista separada). Renderiza los 3 pasos del flujo (Identificacion → Verificacion → Papeleta) con:
+- Círculos numerados que pasan a checkmark (SVG) al completarse
+- Línea conectora que se rellena en `--color-brand` al avanzar
+- Oculta en el estado `success`
+
+### Banda institucional
+
+El header azul (`from-brand-deep to-brand`) incluye un escudo SVG de tres capas con checkmark interno, alineado a la izquierda del título del portal.
 
 ---
 
@@ -211,6 +223,15 @@ Gestionados en dos capas:
 - Implementado con `useEffect` + `window.setTimeout` (no `setInterval`)
 - Al llegar a 0, el botón "Confirmar voto" se deshabilita y aparece mensaje de sesión expirada
 
+### Estados visuales del temporizador
+
+| Segundos restantes | Color | Fondo |
+|---|---|---|
+| > 30 | `text-ink` (neutro) | blanco |
+| ≤ 30 | `text-amber-700` | `bg-amber-50` |
+| ≤ 10 | `text-red-600` | `bg-red-50` |
+| 0 (expirado) | `text-red-600` | `bg-red-50` |
+
 ---
 
 ## Roadmap de fases
@@ -220,6 +241,7 @@ Gestionados en dos capas:
 | Fase 1 | Frontend con mock data — validación UX y diseño | ✅ Completado |
 | Fase 1b | Auditoría de seguridad frontend (CSP nonce, HSTS, rate limiting, receiptCode seguro) | ✅ Completado |
 | Fase 2 | Testing (Vitest + RTL unit tests · Playwright E2E) | ✅ Completado |
+| Fase 2b | Mejoras visuales: barra de progreso, skeletons, spinners, animaciones, escudo SVG, SuccessView rediseñada, role/slogan en candidatos, timer con urgencia | ✅ Completado |
 | Fase 3 | Backend: autenticación real, envío de correo, base de datos | ⬜ Pendiente |
 | Fase 4 | Despliegue en producción (Vercel + BD serverless) | ⬜ Pendiente |
 

@@ -29,6 +29,8 @@ npm run build
 | `npm run build` | Build de producción |
 | `npm run start` | Servidor de producción |
 | `npm run lint` | Lint con ESLint |
+| `npm run test` | Tests unitarios (Vitest + RTL) |
+| `npm run test:e2e` | Tests E2E (Playwright) |
 
 ---
 
@@ -64,6 +66,19 @@ src/
 
 ---
 
+## UI / Experiencia
+
+- **Barra de progreso** — tres pasos visuales (Identificacion → Verificacion → Papeleta) con checkmarks animados
+- **Transiciones** — `fade + slide` al cambiar de vista vía `key={appState}`
+- **Skeleton loaders** — shimmer animado mientras se carga la papeleta
+- **Spinners en botones** — feedback inmediato en cada acción asíncrona
+- **Timer con urgencia** — cambia a amber (≤30s) y rojo (≤10s) antes de expirar
+- **Candidatos completos** — cada tarjeta muestra nombre, cargo y eslogan
+- **SuccessView** — check SVG animado, candidatura elegida destacada, comprobante en `<code>` monoespaciado
+- **Escudo SVG** — identidad institucional en el header de la banda azul
+
+---
+
 ## Seguridad
 
 - **CSP nonce-based** — `src/middleware.ts` genera un nonce criptográfico por request. En producción no hay `unsafe-inline` ni `unsafe-eval`.
@@ -77,4 +92,4 @@ src/
 
 ## Estado del proyecto
 
-Fase 1b completada (frontend + hardening de seguridad). Ver [`context.md`](./context.md) para documentación técnica completa y roadmap de fases.
+Fase 2b completada (mejoras visuales: animaciones, skeletons, barra de progreso, spinners, SuccessView rediseñada). Ver [`context.md`](./context.md) para documentación técnica completa y roadmap de fases.

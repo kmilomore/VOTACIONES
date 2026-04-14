@@ -156,9 +156,11 @@ Los ítems ya completados en Fase 1b están marcados. Los restantes requieren in
 | Archivo | Cambio | Estado |
 |---|---|---|
 | `src/app/page.tsx` | `handleRestart` limpia campos en blanco (sin pre-relleno) | ✅ Hecho |
+| `src/app/page.tsx` | Barra de progreso de 3 pasos reemplaza los step-chips por vista | ✅ Hecho |
 | `src/app/page.tsx` | Actualizar texto del banner a copy real (sin "datos simulados") | ⏳ Pendiente (Fase 3) |
 | `src/components/views/LoginView.tsx` | Chip de hint eliminado | ✅ Hecho |
 | `src/components/views/OtpView.tsx` | Chip de hint eliminado | ✅ Hecho |
+| `src/components/views/VotingView.tsx` | Mostrar `role` y `slogan` del candidato en cada tarjeta | ✅ Hecho |
 | `src/lib/mock-api.ts` | **Eliminar** todo el archivo. Reemplazar con llamadas `fetch` reales | ⏳ Pendiente (Fase 3) |
 | `src/types/index.ts` | Mantener interfaces; ajustar si el backend devuelve campos adicionales | ⏳ Pendiente (Fase 3) |
 | `next.config.mjs` | CSP movida al middleware con nonce | ✅ Hecho |
