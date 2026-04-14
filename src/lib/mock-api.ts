@@ -67,7 +67,7 @@ export const candidates: Candidate[] = [
   {
     id: 'marisol-huerta',
     name: 'Marisol Huerta',
-    role: 'Representante de estamento docente',
+    role: 'Escuela Matrin Prado',
     slogan: 'Participacion informada con foco en continuidad pedagogica.',
     initials: 'MH',
     accentColor: '#8c4f2f',
@@ -76,7 +76,7 @@ export const candidates: Candidate[] = [
   {
     id: 'vianka-mejias',
     name: 'Vianka Mejias',
-    role: 'Representante de gestion territorial',
+    role: 'Colegio República de Costa Rica',
     slogan: 'Coordinacion intersectorial para escuelas mas conectadas.',
     initials: 'VM',
     accentColor: '#355c7d',
@@ -85,7 +85,7 @@ export const candidates: Candidate[] = [
   {
     id: 'ximena-pino',
     name: 'Ximena Pino',
-    role: 'Representante de convivencia y bienestar',
+    role: 'Liceo José Victorino Lastarria',
     slogan: 'Vinculos de confianza para comunidades escolares solidas.',
     initials: 'XP',
     accentColor: '#44633f',
@@ -94,7 +94,7 @@ export const candidates: Candidate[] = [
   {
     id: 'jorge-barahona',
     name: 'Jorge Barahona',
-    role: 'Representante de innovacion publica',
+    role: 'Liceo Carmela Carvajal de Prat',
     slogan: 'Procesos simples y transparentes al servicio del territorio.',
     initials: 'JB',
     accentColor: '#6f4b8b',
@@ -104,7 +104,7 @@ export const candidates: Candidate[] = [
   {
     id: 'carmen-lagos',
     name: 'Carmen Lagos',
-    role: 'Representante de asistentes zona oriente',
+    role: 'Colegio República de Costa Rica',
     slogan: 'Reconocimiento y valoración del trabajo asistencial.',
     initials: 'CL',
     accentColor: '#7a3a1a',
@@ -113,7 +113,7 @@ export const candidates: Candidate[] = [
   {
     id: 'miguel-torres',
     name: 'Miguel Torres',
-    role: 'Representante técnico-administrativo',
+    role: 'Colegio de Aplicación Artística y Cultural',
     slogan: 'Coordinación efectiva entre equipos de apoyo escolar.',
     initials: 'MT',
     accentColor: '#1a6a6a',
@@ -122,7 +122,7 @@ export const candidates: Candidate[] = [
   {
     id: 'patricia-vera',
     name: 'Patricia Vera',
-    role: 'Representante de auxiliares de educación',
+    role: 'Liceo de Aplicación Pablo Neruda',
     slogan: 'Condiciones dignas y reconocimiento para todos los estamentos.',
     initials: 'PV',
     accentColor: '#5a4a1a',
