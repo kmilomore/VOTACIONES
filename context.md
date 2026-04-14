@@ -231,7 +231,7 @@ El skeleton de carga de papeleta replica la geometría real del `VotingView`:
 
 ---
 
-## Seguridad implementada (Fase 1b)
+## Seguridad implementada (Fases 1b + 2d)
 
 ### Headers HTTP
 
@@ -239,20 +239,51 @@ Gestionados en dos capas:
 
 | Capa | Archivo | Headers |
 |---|---|---|
-| Estáticos | `next.config.mjs` | `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`, `Strict-Transport-Security` |
-| Dinámicos | `src/middleware.ts` | `Content-Security-Policy` (nonce por request) |
+| Estáticos | `next.config.mjs` | `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`, `Strict-Transport-Security`, `Cross-Origin-Opener-Policy`, `Cross-Origin-Resource-Policy` |
+| Dinámicos | `src/middleware.ts` | `Content-Security-Policy` (nonce por request), rate limiting por IP |
 
 ### Content Security Policy
 
 - En **desarrollo**: `unsafe-inline` + `unsafe-eval` para compatibilidad con Fast Refresh de Next.js.
 - En **producción**: `nonce-{nonce} + strict-dynamic`. Nonce generado con `crypto.randomUUID()` por cada request en el middleware Edge.
+- `report-uri /api/csp-report` activo en producción — recibe violaciones sin bloquear nada.
 
-### Rate limiting frontend
+### Rate limiting
 
-| Flujo | Máximo de intentos | Consecuencia |
+| Capa | Mecanismo | Límite | Consecuencia |
+|---|---|---|---|
+| Middleware Edge (IP) | `Map` en memoria — 20 req/min por IP | 20 requests/60s | `429 Too Many Requests` + `Retry-After: 60` |
+| Login (frontend) | `loginAttempts` en estado React | 5 intentos fallidos | Formulario bloqueado (`isLocked=true`) |
+| OTP (frontend) | `otpAttempts` en estado React | 3 intentos fallidos | Regreso forzado a login + reseteo de estado |
+
+> **Nota:** El rate limiter de middleware usa `Map` en memoria por instancia Edge — suficiente para Fase 2d. Para producción real, migrar a Vercel KV.
+
+### Expiración de sesión por inactividad
+
+- Timeout: **5 minutos** sin interacción del usuario.
+- Activo únicamente en estados `otp` y `vote`.
+- Eventos que reinician el timer: `mousemove`, `keydown`, `pointerdown`, `touchstart`.
+- Al expirar: resetea a `login`, limpia `otp` y `user`, muestra mensaje explicativo.
+- Implementado con `useEffect` + `window.setTimeout` (limpiado correctamente en cleanup).
+
+### Sanitización de inputs
+
+| Campo | Allowlist | Atributos HTML |
 |---|---|---|
-| Login (RUT + email) | 5 intentos fallidos | Formulario bloqueado (`isLocked=true`) |
-| OTP | 3 intentos fallidos | Regreso forzado a login + reseteo de estado |
+| RUT — número | Solo dígitos `[0-9]`, máx 8 chars | `inputMode="numeric"`, `pattern="[0-9]*"` |
+| RUT — dígito verificador | Solo `[0-9kK]`, máx 1 char | `inputMode="text"` |
+| OTP | Solo dígitos `[0-9]`, máx 1 por caja | `inputMode="numeric"`, `pattern="[0-9]*"` |
+| Email | Nativo `type="email"` + `maxLength={254}` | `autoComplete="email"` |
+
+### Headers de aislamiento
+
+| Header | Valor | Protección |
+|---|---|---|
+| `Cross-Origin-Opener-Policy` | `same-origin` | Previene ataques `window.opener` / Spectre |
+| `Cross-Origin-Resource-Policy` | `same-origin` | Impide embeber recursos desde otros orígenes |
+| `Permissions-Policy` | `camera=(), microphone=(), geolocation=(), payment=(), usb=(), serial=(), display-capture=()` | Deshabilita APIs de hardware sensibles |
+| `X-Frame-Options` | `DENY` | Previene clickjacking |
+| `X-Content-Type-Options` | `nosniff` | Previene MIME sniffing |
 
 ### Integridad del estado
 
@@ -260,6 +291,18 @@ Gestionados en dos capas:
 - Al retroceder desde OTP, se limpian `otp`, `user` y ambos contadores.
 - `handleRestart()` limpia todos los campos — sin pre-relleno de credenciales de prueba.
 - `receiptCode` usa `crypto.randomUUID()` — no timestamp predecible.
+
+### Cosas que NO hacer en este proyecto
+
+> Lista de prácticas prohibidas para futuros colaboradores:
+
+- **No exponer credenciales de prueba en la UI** — ni hints, ni placeholders con valores reales.
+- **No mover la CSP a `next.config.mjs` como header estático** — pierde el nonce y bloquea los chunks en producción.
+- **No hacer `layout.tsx` estático** — debe llamar `await headers()` para forzar renderizado dinámico y que Next.js inyecte el nonce.
+- **No usar `setInterval` para el timer** — el proyecto usa `setTimeout` recursivo para evitar drift y doble-disparos en StrictMode.
+- **No llamar `getCandidates()` en el mont inicial** — solo debe llamarse tras OTP exitoso.
+- **No bypassear el rate limiter** deshabilitando el middleware en rutas sensibles.
+- **No guardar el RUT con puntos en el estado** — el formato con puntos es solo para visualización en el indicador.
 
 ---
 
@@ -290,6 +333,7 @@ Gestionados en dos capas:
 | Fase 2 | Testing (Vitest + RTL unit tests · Playwright E2E) | ✅ Completado |
 | Fase 2b | Mejoras visuales: barra de progreso, skeletons, spinners, animaciones, escudo SVG, SuccessView rediseñada, role/slogan en candidatos, timer con urgencia | ✅ Completado |
 | Fase 2c | UX avanzado: validador RUT en tiempo real, OTP 6 cajas, modal de confirmación, transiciones slide, skeletons exactos, fix CSP Vercel | ✅ Completado |
+| Fase 2d | Seguridad avanzada: rate limiting por IP, CSP report-uri, COOP/CORP headers, Permissions-Policy extendida, allowlist inputs, expiración por inactividad | ✅ Completado |
 | Fase 3 | Backend: autenticación real, envío de correo, base de datos | ⬜ Pendiente |
 | Fase 4 | Despliegue en producción (Vercel + BD serverless) | ⬜ Pendiente |
 
