@@ -15,6 +15,7 @@ function renderVoting(overrides: Partial<React.ComponentProps<typeof VotingView>
     candidates: MOCK_CANDIDATES,
     voterName: 'Test Votante',
     estamento: 'docentes',
+    isDemoMode: false,
     selectedCandidateId: null,
     remainingSeconds: 120,
     hasExpired: false,
@@ -30,7 +31,7 @@ function renderVoting(overrides: Partial<React.ComponentProps<typeof VotingView>
 describe('VotingView', () => {
   it('muestra el nombre del votante', () => {
     renderVoting();
-    expect(screen.getByText(/Test Votante/i)).toBeInTheDocument();
+    expect(screen.getByText(/Test/i)).toBeInTheDocument();
   });
 
   it('renderiza una tarjeta por cada candidato', () => {
@@ -84,5 +85,16 @@ describe('VotingView', () => {
   it('muestra mensaje de error cuando errorMessage tiene valor', () => {
     renderVoting({ errorMessage: 'Debes seleccionar una candidatura.' });
     expect(screen.getByText(/debes seleccionar/i)).toBeInTheDocument();
+  });
+
+  it('muestra badge de simulacion cuando isDemoMode es true', () => {
+    renderVoting({ isDemoMode: true });
+    expect(screen.getByText(/simulacion guiada/i)).toBeInTheDocument();
+  });
+
+  it('muestra ayuda contextual desde el icono de pregunta', async () => {
+    renderVoting();
+    await userEvent.click(screen.getByRole('button', { name: /ayuda: papeleta/i }));
+    expect(screen.getByText(/marca una sola candidatura/i)).toBeInTheDocument();
   });
 });

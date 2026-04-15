@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 
+import { HelpTooltip } from '@/components/HelpTooltip';
 import type { Candidate, Estamento } from '@/types';
 
 const ESTAMENTO_LABELS: Record<Estamento, string> = {
@@ -20,6 +21,7 @@ interface VotingViewProps {
   candidates: Candidate[];
   voterName: string;
   estamento: Estamento;
+  isDemoMode: boolean;
   selectedCandidateId: string | null;
   remainingSeconds: number;
   hasExpired: boolean;
@@ -39,6 +41,7 @@ export function VotingView({
   candidates,
   voterName,
   estamento,
+  isDemoMode,
   selectedCandidateId,
   remainingSeconds,
   hasExpired,
@@ -52,6 +55,7 @@ export function VotingView({
   const cancelButtonRef = useRef<HTMLButtonElement | null>(null);
   const modalPanelRef = useRef<HTMLDivElement | null>(null);
   const selectedCandidate = candidates.find((c) => c.id === selectedCandidateId) ?? null;
+  const displayName = voterName.split(/\s+/).filter(Boolean)[0] ?? voterName;
 
   function handleConfirmClick() {
     if (!selectedCandidateId || hasExpired) return;
@@ -106,12 +110,19 @@ export function VotingView({
           <p className="mt-0 mb-0 text-[10px] font-bold font-sans uppercase tracking-[0.16em] text-ink-muted">
             Papeleta digital
           </p>
-          <h1 className="m-0 font-serif text-[clamp(20px,2.6vw,28px)] text-ink leading-none tracking-tight">
-            Emision de voto
-          </h1>
+          <div className="mt-1 flex items-start justify-between gap-3">
+            <h1 className="m-0 font-serif text-[clamp(20px,2.6vw,28px)] text-ink leading-none tracking-tight">
+              Emision de voto
+            </h1>
+            <HelpTooltip
+              title="Papeleta"
+              description="Revisa el padron mostrado, marca una sola candidatura y usa el boton de confirmacion una sola vez. En movil, la accion principal queda fija al borde inferior."
+              align="left"
+            />
+          </div>
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <p className="m-0 text-sm text-ink-muted font-sans leading-relaxed">
-              {voterName}, selecciona una candidatura y confirma tu voto antes de que expire la sesion.
+              {displayName}, selecciona una candidatura y confirma tu voto antes de que expire la sesion.
             </p>
             <span
               className="inline-flex shrink-0 px-2.5 py-1 rounded-full text-[10px] font-bold font-sans uppercase tracking-wide"
@@ -123,6 +134,11 @@ export function VotingView({
             >
               Padron: {ESTAMENTO_LABELS[estamento]}
             </span>
+            {isDemoMode ? (
+              <span className="inline-flex shrink-0 px-2.5 py-1 rounded-full text-[10px] font-bold font-sans uppercase tracking-wide border border-emerald-200 bg-emerald-50 text-emerald-700">
+                Simulacion guiada
+              </span>
+            ) : null}
           </div>
         </div>
 
@@ -186,16 +202,18 @@ export function VotingView({
         </p>
       ) : null}
 
-      <div className="flex justify-end mt-3">
-        <button
-          ref={confirmButtonRef}
-          className="inline-flex items-center justify-center h-11 px-6 rounded-xl bg-[#0b5294] text-white font-sans text-sm font-bold tracking-wide shadow-[0_4px_14px_rgba(11,82,148,0.40),inset_0_1px_0_rgba(255,255,255,0.12)] hover:bg-[#0a4278] hover:-translate-y-px active:translate-y-0 disabled:opacity-45 disabled:cursor-not-allowed transition-all duration-150"
-          type="button"
-          onClick={handleConfirmClick}
-          disabled={hasExpired || isSubmitting || !selectedCandidateId}
-        >
-          {isSubmitting ? <><span className="btn-spinner mr-2" />Registrando…</> : 'Confirmar voto →'}
-        </button>
+      <div className="sticky bottom-3 mt-3 -mx-1 px-1 md:static md:mx-0 md:px-0">
+        <div className="flex justify-end rounded-2xl border border-slate-900/[0.08] bg-white/96 p-2 shadow-[0_8px_24px_rgba(6,18,38,0.08)] backdrop-blur-sm md:border-0 md:bg-transparent md:p-0 md:shadow-none">
+          <button
+            ref={confirmButtonRef}
+            className="inline-flex items-center justify-center w-full md:w-auto h-11 px-6 rounded-xl bg-[#0b5294] text-white font-sans text-sm font-bold tracking-wide shadow-[0_4px_14px_rgba(11,82,148,0.40),inset_0_1px_0_rgba(255,255,255,0.12)] hover:bg-[#0a4278] hover:-translate-y-px active:translate-y-0 disabled:opacity-45 disabled:cursor-not-allowed disabled:shadow-none transition-all duration-150 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#0b5294]/20"
+            type="button"
+            onClick={handleConfirmClick}
+            disabled={hasExpired || isSubmitting || !selectedCandidateId}
+          >
+            {isSubmitting ? <><span className="btn-spinner mr-2" />Registrando…</> : 'Confirmar voto →'}
+          </button>
+        </div>
       </div>
     </section>
       {showConfirmModal && selectedCandidate ? (
@@ -232,7 +250,7 @@ export function VotingView({
               <div className="flex gap-2.5">
                 <button
                   ref={cancelButtonRef}
-                  className="flex-1 inline-flex items-center justify-center h-11 px-4 rounded-xl bg-white text-[#1c3d5c] font-sans text-sm font-bold border-[1.5px] border-slate-900/[0.14] hover:bg-slate-50 transition-all duration-150 disabled:opacity-45"
+                  className="flex-1 inline-flex items-center justify-center h-11 px-4 rounded-xl bg-white text-[#1c3d5c] font-sans text-sm font-bold border-[1.5px] border-slate-900/[0.14] hover:bg-slate-50 transition-all duration-150 disabled:opacity-45 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#0b5294]/15"
                   type="button"
                   onClick={() => setShowConfirmModal(false)}
                   disabled={isSubmitting}
@@ -240,7 +258,7 @@ export function VotingView({
                   Cancelar
                 </button>
                 <button
-                  className="flex-1 inline-flex items-center justify-center h-11 px-5 rounded-xl bg-[#0b5294] text-white font-sans text-sm font-bold tracking-wide shadow-[0_4px_14px_rgba(11,82,148,0.40)] hover:bg-[#0a4278] transition-all duration-150 disabled:opacity-45 disabled:cursor-not-allowed"
+                  className="flex-1 inline-flex items-center justify-center h-11 px-5 rounded-xl bg-[#0b5294] text-white font-sans text-sm font-bold tracking-wide shadow-[0_4px_14px_rgba(11,82,148,0.40)] hover:bg-[#0a4278] transition-all duration-150 disabled:opacity-45 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#0b5294]/20"
                   type="button"
                   onClick={() => { setShowConfirmModal(false); onSubmitVote(); }}
                   disabled={isSubmitting}

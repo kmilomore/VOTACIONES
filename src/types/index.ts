@@ -16,7 +16,7 @@ export interface Candidate {
   estamento: Estamento;
 }
 
-export type AppState = 'login' | 'otp' | 'vote' | 'success';
+export type AppState = 'intro' | 'login' | 'otp' | 'vote' | 'success';
 
 // ---------------------------------------------------------------------------
 // Admin metrics types

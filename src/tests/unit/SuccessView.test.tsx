@@ -9,6 +9,7 @@ function renderSuccess(overrides: Partial<React.ComponentProps<typeof SuccessVie
     voterName: 'Test Votante',
     candidateName: 'Ana Pérez',
     receiptCode: 'SLEP-AP-A1B2C3D4',
+    isDemoMode: false,
     onRestart: vi.fn(),
     ...overrides,
   };
@@ -18,7 +19,7 @@ function renderSuccess(overrides: Partial<React.ComponentProps<typeof SuccessVie
 describe('SuccessView', () => {
   it('muestra el nombre del votante', () => {
     renderSuccess();
-    expect(screen.getByText(/Test Votante/i)).toBeInTheDocument();
+    expect(screen.getByText(/Test,/i)).toBeInTheDocument();
   });
 
   it('muestra el nombre del candidato elegido', () => {
@@ -36,5 +37,10 @@ describe('SuccessView', () => {
     renderSuccess({ onRestart });
     await userEvent.click(screen.getByRole('button', { name: /reiniciar/i }));
     expect(onRestart).toHaveBeenCalledOnce();
+  });
+
+  it('muestra el mensaje de simulacion cuando isDemoMode es true', () => {
+    renderSuccess({ isDemoMode: true });
+    expect(screen.getByText(/solo para capacitacion/i)).toBeInTheDocument();
   });
 });

@@ -212,3 +212,277 @@
   animation: modal-in 0.22s cubic-bezier(0.34, 1.56, 0.64, 1) both;
   overflow: hidden;
 }
+
+.help-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 9999px;
+  border: 1px solid rgba(12, 33, 56, 0.14);
+  background: rgba(248, 250, 252, 0.95);
+  color: #4e6a85;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+}
+
+.help-trigger:hover,
+.help-trigger:focus-visible {
+  background: white;
+  color: #0b5294;
+  border-color: rgba(11, 82, 148, 0.32);
+  transform: translateY(-1px);
+  outline: none;
+}
+
+.help-tooltip {
+  position: absolute;
+  top: calc(100% + 10px);
+  z-index: 30;
+  width: min(280px, calc(100vw - 48px));
+  padding: 12px 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(12, 33, 56, 0.12);
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 18px 40px rgba(6, 18, 38, 0.14), 0 4px 12px rgba(6, 18, 38, 0.08);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-4px) scale(0.98);
+  transition: opacity 0.16s ease, transform 0.16s ease;
+}
+
+.help-tooltip-open {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0) scale(1);
+}
+
+.portal-contrast-high {
+  --color-brand: #002b5c;
+  --color-brand-mid: #001c3d;
+  --color-brand-deep: #000f24;
+  --color-ink: #05070a;
+  --color-ink-mid: #16212b;
+  --color-ink-muted: #2f3d4a;
+  color: var(--color-ink);
+}
+
+.portal-contrast-high .bg-portal {
+  filter: grayscale(0.15) contrast(1.35) saturate(0.75) brightness(0.58);
+}
+
+.portal-contrast-high > div[class*='bg-gradient-to-br'] {
+  background: linear-gradient(135deg, rgba(0, 8, 20, 0.97) 0%, rgba(0, 20, 46, 0.92) 44%, rgba(0, 10, 25, 0.97) 100%) !important;
+}
+
+.portal-contrast-high div[style*='linear-gradient(135deg, #061d3d'] {
+  background: linear-gradient(135deg, #000d20 0%, #002147 52%, #00336d 100%) !important;
+}
+
+.portal-contrast-high section[class*='bg-white'],
+.portal-contrast-high div[class*='bg-white/90'],
+.portal-contrast-high div[class*='bg-white/95'],
+.portal-contrast-high div[class*='bg-slate-50'],
+.portal-contrast-high div[class*='from-white'],
+.portal-contrast-high div[class*='to-slate-50'],
+.portal-contrast-high .modal-panel {
+  background: rgba(255, 255, 255, 0.99) !important;
+  border-color: rgba(5, 7, 10, 0.38) !important;
+  box-shadow: 0 0 0 1px rgba(5, 7, 10, 0.14), 0 24px 64px rgba(0, 8, 20, 0.32), 0 4px 12px rgba(0, 8, 20, 0.18) !important;
+}
+
+.portal-contrast-high h1,
+.portal-contrast-high h2,
+.portal-contrast-high h3,
+.portal-contrast-high p,
+.portal-contrast-high span,
+.portal-contrast-high strong,
+.portal-contrast-high label,
+.portal-contrast-high li,
+.portal-contrast-high code {
+  color: var(--color-ink) !important;
+}
+
+.portal-contrast-high p[class*='text-slate-500'],
+.portal-contrast-high p[class*='text-ink-muted'],
+.portal-contrast-high span[class*='text-slate-400'],
+.portal-contrast-high span[class*='text-ink-muted'],
+.portal-contrast-high p[class*='text-[#4e6a85]'],
+.portal-contrast-high span[class*='text-[#1c3d5c]'] {
+  color: var(--color-ink-muted) !important;
+}
+
+.portal-contrast-high input,
+.portal-contrast-high textarea,
+.portal-contrast-high select {
+  background: #fff !important;
+  color: #05070a !important;
+  border-color: rgba(5, 7, 10, 0.6) !important;
+}
+
+.portal-contrast-high input::placeholder,
+.portal-contrast-high textarea::placeholder {
+  color: #51606f !important;
+}
+
+.portal-contrast-high button[class*='bg-[#0b5294]'],
+.portal-contrast-high button[class*='bg-red-600'] {
+  background: #001c3d !important;
+  color: white !important;
+  border-color: #001c3d !important;
+}
+
+.portal-contrast-high button[class*='bg-white'],
+.portal-contrast-high button[class*='bg-slate-50'] {
+  background: #ffffff !important;
+  color: #05070a !important;
+  border-color: rgba(5, 7, 10, 0.48) !important;
+}
+
+.portal-contrast-high button[class*='hover:bg-[#0a4278]']:hover,
+.portal-contrast-high button[class*='bg-[#0b5294]']:hover {
+  background: #00336d !important;
+}
+
+.portal-contrast-high button[class*='bg-white']:hover,
+.portal-contrast-high button[class*='bg-slate-50']:hover {
+  background: #eef3f8 !important;
+}
+
+.portal-contrast-high [class*='bg-emerald-50'],
+.portal-contrast-high [class*='bg-amber-50'],
+.portal-contrast-high [class*='bg-red-50'] {
+  border-width: 1.5px;
+  font-weight: 500;
+}
+
+.portal-contrast-high [class*='text-emerald-700'] {
+  color: #0b5f3b !important;
+}
+
+.portal-contrast-high [class*='bg-emerald-50'] {
+  background: #edfdf3 !important;
+  border-color: #0b5f3b !important;
+}
+
+.portal-contrast-high [class*='text-amber-700'],
+.portal-contrast-high [class*='text-amber-800'] {
+  color: #8a3f00 !important;
+}
+
+.portal-contrast-high [class*='bg-amber-50'] {
+  background: #fff4db !important;
+  border-color: #b45309 !important;
+}
+
+.portal-contrast-high [class*='text-red-600'],
+.portal-contrast-high [class*='text-red-700'] {
+  color: #b00020 !important;
+}
+
+.portal-contrast-high [class*='bg-red-50'] {
+  background: #fff0f3 !important;
+  border-color: #b00020 !important;
+}
+
+.portal-contrast-high .candidate-badge {
+  background: color-mix(in srgb, var(--accent) 18%, white) !important;
+  color: color-mix(in srgb, var(--accent) 78%, black) !important;
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--accent) 72%, white);
+}
+
+.portal-contrast-high .skeleton {
+  background: linear-gradient(90deg, #d4dde8 25%, #bcc9d8 50%, #d4dde8 75%);
+}
+
+.portal-contrast-high .candidate-selected {
+  border-color: #001c3d !important;
+  background: linear-gradient(180deg, #ffffff 0%, #eef4fb 100%) !important;
+  box-shadow: 0 0 0 3px rgba(0, 28, 61, 0.18), 0 18px 40px rgba(0, 28, 61, 0.16) !important;
+}
+
+.portal-contrast-high .help-trigger {
+  background: #fff !important;
+  color: #001c3d !important;
+  border-color: rgba(0, 28, 61, 0.34) !important;
+}
+
+.portal-contrast-high .help-tooltip {
+  background: #ffffff !important;
+  border-color: rgba(5, 7, 10, 0.28) !important;
+}
+
+.portal-contrast-high [class*='ring-[#0b5294]/20'] {
+  --tw-ring-color: rgba(0, 28, 61, 0.28) !important;
+}
+
+.portal-contrast-high [class*='bg-[#0b5294]'] {
+  background-color: #001c3d !important;
+}
+
+.portal-contrast-high [class*='text-[#0b5294]'] {
+  color: #001c3d !important;
+}
+
+.portal-contrast-high [class*='bg-slate-100'] {
+  background-color: #d9e3ed !important;
+}
+
+.portal-contrast-high [class*='bg-slate-200'] {
+  background-color: #aebccc !important;
+}
+
+.portal-contrast-high [class*='text-slate-500'],
+.portal-contrast-high [class*='text-slate-400'] {
+  color: #445261 !important;
+}
+
+.portal-contrast-high div[style*='linear-gradient(135deg, #061d3d'] h2,
+.portal-contrast-high div[style*='linear-gradient(135deg, #061d3d'] p,
+.portal-contrast-high div[style*='linear-gradient(135deg, #061d3d'] span,
+.portal-contrast-high div[style*='linear-gradient(135deg, #061d3d'] button {
+  color: #ffffff !important;
+}
+
+.portal-contrast-high div[style*='linear-gradient(135deg, #061d3d'] button {
+  border-color: rgba(255, 255, 255, 0.28) !important;
+  background: rgba(255, 255, 255, 0.12) !important;
+}
+
+.portal-contrast-high div[style*='linear-gradient(135deg, #061d3d'] button:hover,
+.portal-contrast-high div[style*='linear-gradient(135deg, #061d3d'] button:focus-visible {
+  background: rgba(255, 255, 255, 0.2) !important;
+  color: #ffffff !important;
+}
+
+.portal-contrast-high .modal-panel,
+.portal-contrast-high section[class*='bg-white'],
+.portal-contrast-high div[class*='bg-white/90'] {
+  border-color: rgba(8, 17, 26, 0.18);
+}
+
+.portal-contrast-high button,
+.portal-contrast-high input,
+.portal-contrast-high textarea,
+.portal-contrast-high select {
+  box-shadow: none;
+}
+
+.portal-contrast-high button:focus-visible,
+.portal-contrast-high input:focus-visible,
+.portal-contrast-high textarea:focus-visible,
+.portal-contrast-high select:focus-visible {
+  outline: 3px solid rgba(11, 82, 148, 0.24);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

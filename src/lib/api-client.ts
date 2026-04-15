@@ -57,6 +57,6 @@ export async function submitVote(candidateId: string): Promise<{ receiptCode: st
   });
 }
 
-export async function resetSession(): Promise<void> {
-  await requestJson<void>('/api/session', { method: 'DELETE' });
+export async function resetSession(init?: RequestInit): Promise<void> {
+  await requestJson<void>('/api/session', { method: 'DELETE', ...init });
 }

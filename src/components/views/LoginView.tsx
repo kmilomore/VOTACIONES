@@ -1,3 +1,5 @@
+import { HelpTooltip } from '@/components/HelpTooltip';
+
 function validateRut(number: string, verifier: string): 'valid' | 'invalid' | 'empty' {
   if (!number || !verifier) return 'empty';
   const digits = number.split('').reverse().map(Number);
@@ -18,6 +20,14 @@ function formatRutNumber(raw: string): string {
   return groups.join('.').split('').reverse().join('');
 }
 
+function maskEmail(email: string): string {
+  const [localPart = '', domain = ''] = email.trim().split('@');
+  if (!localPart || !domain) return email;
+
+  const visible = localPart.slice(0, 2);
+  return `${visible}${'•'.repeat(Math.max(localPart.length - 2, 2))}@${domain}`;
+}
+
 const inputClass =
   'w-full h-11 px-3.5 rounded-xl border-[1.5px] border-slate-900/[0.14] bg-white text-[#0c2138] font-sans text-[15px] transition-all duration-150 focus:outline-none focus:border-[#0b5294] focus:ring-2 focus:ring-[#0b5294]/15 placeholder:text-slate-400/70';
 
@@ -27,6 +37,7 @@ interface LoginViewProps {
   rutNumber: string;
   rutVerifier: string;
   email: string;
+  isSimplifiedMode: boolean;
   isSubmitting: boolean;
   isLocked: boolean;
   errorMessage: string | null;
@@ -40,6 +51,7 @@ export function LoginView({
   rutNumber,
   rutVerifier,
   email,
+  isSimplifiedMode,
   isSubmitting,
   isLocked,
   errorMessage,
@@ -51,20 +63,29 @@ export function LoginView({
   const rutStatus = validateRut(rutNumber, rutVerifier);
   const errorId = errorMessage ? 'login-form-error' : undefined;
   const rutStatusId = rutStatus !== 'empty' ? 'rut-status' : undefined;
+  const trimmedEmail = email.trim();
+  const hasValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail);
 
   return (
     <section className="rounded-2xl bg-white/95 backdrop-blur-sm border border-slate-900/10 text-[#0c2138] p-5">
       <div className="mb-4 pb-4 border-b border-slate-900/[0.08]">
-        <h1 className="mt-0 mb-0 font-serif text-[clamp(20px,2.6vw,28px)] text-[#0c2138] leading-none tracking-tight">
-          Ingresa para votar
-        </h1>
+        <div className="flex items-start justify-between gap-3">
+          <h1 className="mt-0 mb-0 font-serif text-[clamp(20px,2.6vw,28px)] text-[#0c2138] leading-none tracking-tight">
+            {isSimplifiedMode ? 'Ingresa tus datos' : 'Ingresa para votar'}
+          </h1>
+          <HelpTooltip
+            title="Identificacion"
+            description="Usa tu RUT sin puntos, verifica el digito final y ten tu correo institucional activo para recibir el siguiente paso."
+          />
+        </div>
         <p className="mt-2 mb-0 text-sm text-slate-500 font-sans leading-relaxed">
-          Ingresa tu RUT y correo institucional registrado en el padron del Consejo Local.
+          {isSimplifiedMode
+            ? 'Escribe tu RUT y tu correo institucional.'
+            : 'Ingresa tu RUT y correo institucional registrado en el padron del Consejo Local.'}
         </p>
-
       </div>
 
-      <form className="grid gap-3.5" onSubmit={onSubmit}>
+      <form className="grid gap-3.5" onSubmit={onSubmit} autoComplete="off">
         <fieldset className="grid gap-2 min-w-0">
           <legend className={labelClass}>RUT</legend>
           <div className="grid grid-cols-[1fr_auto_88px] gap-2 items-center">
@@ -78,6 +99,9 @@ export function LoginView({
               inputMode="numeric"
               pattern="[0-9]*"
               autoComplete="off"
+              autoCapitalize="off"
+              autoCorrect="off"
+              spellCheck={false}
               placeholder="12345678"
               value={rutNumber}
               aria-describedby={[rutStatusId, errorId].filter(Boolean).join(' ') || undefined}
@@ -98,6 +122,9 @@ export function LoginView({
               type="text"
               inputMode="text"
               autoComplete="off"
+              autoCapitalize="characters"
+              autoCorrect="off"
+              spellCheck={false}
               placeholder="9"
               value={rutVerifier}
               aria-describedby={[rutStatusId, errorId].filter(Boolean).join(' ') || undefined}
@@ -137,7 +164,10 @@ export function LoginView({
           <input
             className={inputClass}
             type="email"
-            autoComplete="email"
+            autoComplete="off"
+            autoCapitalize="off"
+            autoCorrect="off"
+            spellCheck={false}
             maxLength={254}
             placeholder="usuario@slep.cl"
             value={email}
@@ -147,6 +177,12 @@ export function LoginView({
           />
         </label>
 
+        {hasValidEmail ? (
+          <p className="m-0 px-3.5 py-2.5 rounded-xl text-[12px] font-sans font-medium text-emerald-700 bg-emerald-50 border border-emerald-200">
+            Te enviaremos el codigo a {maskEmail(trimmedEmail)}.
+          </p>
+        ) : null}
+
         {errorMessage ? (
           <p id="login-form-error" role="alert" aria-live="assertive" className="m-0 px-3.5 py-2.5 rounded-xl text-[13px] font-sans font-medium text-red-600 bg-red-50 border border-red-200">
             {errorMessage}
@@ -154,7 +190,7 @@ export function LoginView({
         ) : null}
 
         <button
-          className="inline-flex items-center justify-center w-full h-11 px-5 rounded-xl bg-[#0b5294] text-white font-sans text-sm font-bold tracking-wide shadow-[0_4px_14px_rgba(11,82,148,0.40),inset_0_1px_0_rgba(255,255,255,0.12)] hover:bg-[#0a4278] hover:shadow-[0_6px_20px_rgba(11,82,148,0.48)] hover:-translate-y-px active:translate-y-0 disabled:opacity-45 disabled:cursor-not-allowed transition-all duration-150"
+          className="inline-flex items-center justify-center w-full h-11 px-5 rounded-xl bg-[#0b5294] text-white font-sans text-sm font-bold tracking-wide shadow-[0_4px_14px_rgba(11,82,148,0.40),inset_0_1px_0_rgba(255,255,255,0.12)] hover:bg-[#0a4278] hover:shadow-[0_6px_20px_rgba(11,82,148,0.48)] hover:-translate-y-px active:translate-y-0 disabled:opacity-45 disabled:cursor-not-allowed disabled:shadow-none transition-all duration-150 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#0b5294]/20"
           type="submit"
           disabled={isSubmitting || isLocked}
         >

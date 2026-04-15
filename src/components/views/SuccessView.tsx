@@ -2,10 +2,13 @@ interface SuccessViewProps {
   voterName: string;
   candidateName: string;
   receiptCode: string;
+  isDemoMode: boolean;
   onRestart: () => void;
 }
 
-export function SuccessView({ voterName, candidateName, receiptCode, onRestart }: SuccessViewProps) {
+export function SuccessView({ voterName, candidateName, receiptCode, isDemoMode, onRestart }: SuccessViewProps) {
+  const displayName = voterName.split(/\s+/).filter(Boolean)[0] ?? voterName;
+
   return (
     <section className="rounded-2xl bg-white/95 backdrop-blur-sm border border-slate-900/10 text-ink p-6">
       <div className="grid gap-4 justify-items-center text-center">
@@ -29,7 +32,7 @@ export function SuccessView({ voterName, candidateName, receiptCode, onRestart }
             ¡Voto registrado!
           </h1>
           <p className="m-0 text-sm text-ink-muted font-sans leading-relaxed">
-            {voterName}, tu preferencia fue registrada correctamente.
+            {displayName}, tu preferencia fue registrada correctamente.
           </p>
         </div>
 
@@ -48,15 +51,17 @@ export function SuccessView({ voterName, candidateName, receiptCode, onRestart }
         </div>
 
         <p className="m-0 w-full px-3.5 py-2.5 rounded-xl text-[12px] font-sans text-emerald-700 bg-emerald-50 border border-emerald-200 text-left">
-          Entorno de prueba — datos simulados del portal institucional.
+          {isDemoMode
+            ? 'Modo simulacion activo — este recorrido se uso solo para capacitacion y no representa una emision real.'
+            : 'Entorno de prueba — datos simulados del portal institucional.'}
         </p>
 
         <button
-          className="inline-flex items-center justify-center w-full h-11 px-5 rounded-xl bg-[#0b5294] text-white font-sans text-sm font-bold tracking-wide shadow-[0_4px_14px_rgba(11,82,148,0.40),inset_0_1px_0_rgba(255,255,255,0.12)] hover:bg-[#0a4278] hover:-translate-y-px active:translate-y-0 transition-all duration-150"
+          className="inline-flex items-center justify-center w-full h-11 px-5 rounded-xl bg-[#0b5294] text-white font-sans text-sm font-bold tracking-wide shadow-[0_4px_14px_rgba(11,82,148,0.40),inset_0_1px_0_rgba(255,255,255,0.12)] hover:bg-[#0a4278] hover:-translate-y-px active:translate-y-0 transition-all duration-150 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#0b5294]/20"
           type="button"
           onClick={onRestart}
         >
-          Reiniciar demo
+          {isDemoMode ? 'Reiniciar simulacion' : 'Reiniciar demo'}
         </button>
       </div>
     </section>

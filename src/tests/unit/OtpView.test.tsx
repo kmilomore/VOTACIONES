@@ -22,7 +22,7 @@ function renderOtp(overrides: Partial<React.ComponentProps<typeof OtpView>> = {}
 describe('OtpView', () => {
   it('muestra el email enmascarado en el texto de instrucciones', () => {
     renderOtp({ email: 'usuario@slep.cl' });
-    expect(screen.getByText(/usuario@slep\.cl/i)).toBeInTheDocument();
+    expect(screen.getByText(/us•••••@slep\.cl/i)).toBeInTheDocument();
   });
 
   it('renderiza el input de OTP con maxLength 6', () => {
@@ -40,12 +40,16 @@ describe('OtpView', () => {
 
   it('deshabilita ambos botones cuando isSubmitting es true', () => {
     renderOtp({ isSubmitting: true });
-    screen.getAllByRole('button').forEach((btn) => expect(btn).toBeDisabled());
+    expect(screen.getByRole('button', { name: /ayuda: codigo otp/i })).toBeEnabled();
+    expect(screen.getByRole('button', { name: /volver/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /verificando|acceder/i })).toBeDisabled();
   });
 
   it('deshabilita ambos botones cuando isLocked es true', () => {
     renderOtp({ isLocked: true });
-    screen.getAllByRole('button').forEach((btn) => expect(btn).toBeDisabled());
+    expect(screen.getByRole('button', { name: /ayuda: codigo otp/i })).toBeEnabled();
+    expect(screen.getByRole('button', { name: /volver/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /acceder/i })).toBeDisabled();
   });
 
   it('muestra mensaje de error cuando errorMessage tiene valor', () => {
@@ -63,5 +67,11 @@ describe('OtpView', () => {
   it('no muestra el chip de demo en la UI', () => {
     renderOtp();
     expect(screen.queryByText(/demo:/i)).not.toBeInTheDocument();
+  });
+
+  it('muestra ayuda contextual desde el icono de pregunta', async () => {
+    renderOtp();
+    await userEvent.click(screen.getByRole('button', { name: /ayuda: codigo otp/i }));
+    expect(screen.getByText(/Puedes escribir o pegar los seis digitos/i)).toBeInTheDocument();
   });
 });

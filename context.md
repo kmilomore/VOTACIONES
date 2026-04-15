@@ -2,7 +2,7 @@
 
 ## Descripción general
 
-Portal web institucional para la emisión de votos del **Consejo Local del Servicio Local de Educación Pública (SLEP) COLCHAGUA**. La aplicación implementa un flujo guiado de 4 pasos: identificación por RUT, verificación OTP, papeleta digital con temporizador y confirmación de voto.
+Portal web institucional para la emisión de votos del **Consejo Local del Servicio Local de Educación Pública (SLEP) COLCHAGUA**. La aplicación implementa un flujo guiado de 5 pantallas: orientación inicial, identificación por RUT, verificación OTP, papeleta digital con temporizador y confirmación de voto.
 
 ---
 
@@ -40,15 +40,16 @@ Sin librerias de UI externas (no MUI, no shadcn). El sistema de diseño esta def
 src/
 ├── app/
 │   ├── layout.tsx          # Root layout — metadatos, font, globals.css
-│   ├── page.tsx            # Orquestador principal (Client Component)
+│   ├── page.tsx            # Orquestador principal (Client Component) — intro, guardas de flujo y vistas
 │   └── api/                # Route Handlers — BFF interno del flujo
 │   └── globals.css         # Variables CSS, paleta institucional, componentes
 ├── components/
 │   └── views/              # Vistas aisladas, una por cada estado del flujo
+│       ├── IntroView.tsx   # Pantalla inicial — orientación previa, simulación guiada y contraste alto
 │       ├── LoginView.tsx   # Paso 1: RUT (número + dígito verificador) + email
-│       ├── OtpView.tsx     # Paso 2: código OTP de 6 dígitos
-        ├── VotingView.tsx  # Paso 3: papeleta + temporizador 120s con alertas de urgencia
-        └── SuccessView.tsx # Paso 4: confirmación animada + código de comprobante
+│       ├── OtpView.tsx     # Paso 2: código OTP de 6 dígitos + tarjeta de usuario anonimizada
+│       ├── VotingView.tsx  # Paso 3: papeleta + temporizador 120s + CTA sticky + modal de confirmación
+│       └── SuccessView.tsx # Paso 4: confirmación animada + código de comprobante + estado demo
 ├── lib/
 │   ├── api-client.ts       # Cliente HTTP consumido por la UI
 │   ├── mock-api.ts         # Simulación de backend para desarrollo local, usada en servidor
@@ -74,12 +75,12 @@ src/middleware.ts   # CSP nonce-based por request; se ejecuta en el Edge Runtime
 ## Máquina de estados (`AppState`)
 
 ```
-'login' → 'otp' → 'vote' → 'success'
-           ↑                    ↓
-           └────────────────────┘  (reiniciar demo)
+'intro' → 'login' → 'otp' → 'vote' → 'success'
+             ↑                    ↓
+             └────────────────────┘  (reiniciar demo)
 ```
 
-El estado vive en `src/app/page.tsx` como `useState<AppState>('login')`. Cada transicion se produce solo si la llamada a `src/lib/api-client.ts` y a las rutas servidor resuelve sin error.
+El estado vive en `src/app/page.tsx` como `useState<AppState>('intro')`. Cada transición se produce solo si la llamada a `src/lib/api-client.ts` y a las rutas servidor resuelve sin error. El orquestador además impide transiciones inválidas entre estados para evitar saltos visuales inconsistentes.
 
 **Límites de intentos:**
 - Login: máximo 5 intentos fallidos → formulario bloqueado
@@ -110,7 +111,7 @@ interface Candidate {
   estamento: Estamento;       // padrón al que pertenece el candidato
 }
 
-type AppState = 'login' | 'otp' | 'vote' | 'success';
+type AppState = 'intro' | 'login' | 'otp' | 'vote' | 'success';
 ```
 
 ---
@@ -199,6 +200,17 @@ Este archivo `context.md` se concentra en arquitectura, componentes, flujo visua
 | `.check-path` | Trazo SVG del check con animación `stroke-dashoffset` |
 | `.modal-backdrop` | Overlay del modal de confirmación (fixed, blur, z-50) |
 | `.modal-panel` | Panel del modal con animación spring de entrada |
+| `.portal-contrast-high` | Overrides de alto contraste para fondos, texto, inputs, botones y estados |
+
+### IntroView — Orientación previa
+
+Antes del login, la aplicación muestra una pantalla breve con:
+- lista de elementos necesarios para completar el proceso,
+- activación de **modo simulación guiada**,
+- activación de **contraste alto institucional**,
+- recordatorio visible del canal de soporte durante la jornada.
+
+La intención es reducir dudas antes del primer input y evitar que el usuario entre al flujo sin contexto mínimo.
 
 ### Lógica de padrón por estamento
 
@@ -223,12 +235,16 @@ Cada usuario pertenece a un padrón (`estamento`). La papeleta que ve el votante
 
 Despues de login exitoso, la vista OTP muestra una tarjeta con:
 - Avatar con iniciales del nombre (2 letras) con color del estamento.
-- Nombre completo + organización.
+- Nombre parcialmente anonimizado + organización.
 - Badge de estamento con color propio (fondo claro, borde, texto del color del estamento).
+
+El correo mostrado en las instrucciones también se presenta enmascarado para disminuir exposición visual innecesaria.
 
 ### VotingView — Badge de padrón en la papeleta
 
 El encabezado de la papeleta muestra el nombre del votante acompañado de un badge "Padrón: {estamento}" con el color del estamento correspondiente, dejando claro a qué papeleta pertenece.
+
+Si el usuario activó modo simulación, la vista agrega además un badge **Simulación guiada** para evitar ambigüedad con una jornada real.
 
 ### Barra de progreso de pasos
 
@@ -236,6 +252,8 @@ Implementada en `page.tsx` como componente inline (no vista separada). Renderiza
 - Círculos numerados que pasan a checkmark (SVG) al completarse.
 - Línea conectora que se rellena en `--color-brand` al avanzar.
 - Oculta en el estado `success`.
+
+Entre la barra y la vista activa, `page.tsx` inyecta una franja breve de ayuda contextual del paso actual con la acción siguiente esperada.
 
 ### LoginView — Validación de RUT en tiempo real
 
@@ -262,6 +280,8 @@ Implementada en `page.tsx` como componente inline (no vista separada). Renderiza
 - Clic fuera del panel cierra el modal.
 - Estado `showConfirmModal` es local al componente (`useState`).
 
+En móvil, el CTA principal de confirmación se mantiene dentro de una banda sticky inferior para reducir scroll adicional antes del cierre del voto.
+
 ### Animaciones de transición entre pasos
 
 - `page.tsx` mantiene `transitionDirection: 'forward' | 'back'` en estado.
@@ -275,6 +295,35 @@ El skeleton de carga de papeleta replica la geometría real del `VotingView`:
 - Fila superior: bloque de texto (3 líneas) + placeholder rectangular del timer (`120×66px`).
 - Grid de tarjetas: badge circular + línea de nombre (22px) + rol + 2 líneas de slogan.
 - Fila inferior: placeholder del botón «Confirmar voto».
+
+---
+
+## Mejoras recientes de frontend pulido
+
+### Contraste alto institucional
+
+- Activable desde la pantalla inicial y desde la banda superior del portal.
+- Sobrescribe fondos, textos, inputs, botones, badges, tarjetas seleccionadas y estados de alerta.
+- Está pensado para jornadas presenciales, monitores de baja calidad o usuarios que requieren una paleta más dura.
+
+### Modo simulación guiada
+
+- Permite recorrer el flujo con señalización visual de demo.
+- Mantiene etiquetas visibles en intro, papeleta y pantalla final.
+- Sirve para capacitación y validación de UX sin confundir el recorrido con operación real.
+
+### Soporte visible en UI
+
+- La aplicación mantiene una franja persistente recordando el canal de apoyo o mesa de ayuda del establecimiento.
+- El objetivo es que el soporte no dependa de un manual externo ni de memoria del operador.
+
+### Guardas y resiliencia del lado cliente
+
+- Detección de múltiples pestañas mediante `BroadcastChannel`.
+- Advertencia previa a la expiración por inactividad con countdown y opción de mantener la sesión activa.
+- Limpieza de sesión al volver desde caché del navegador (`pageshow persisted`).
+- Protección contra doble envío en acciones críticas.
+- Reinicio defensivo si el cliente detecta estados imposibles, por ejemplo `vote` sin usuario o `success` sin comprobante.
 
 ---
 
@@ -329,6 +378,7 @@ Gestionados en dos capas:
 - Timeout: **5 minutos** sin interacción del usuario.
 - Activo únicamente en estados `otp` y `vote`.
 - Eventos que reinician el timer: `mousemove`, `keydown`, `pointerdown`, `touchstart`.
+- Advertencia visual previa: **60 segundos** antes de expirar.
 - Al expirar: resetea a `login`, limpia `otp` y `user`, muestra mensaje explicativo.
 - Implementado con `useEffect` + `window.setTimeout` (limpiado correctamente en cleanup).
 
@@ -356,9 +406,13 @@ Gestionados en dos capas:
 - `getCandidates()` solo se invoca tras verificacion OTP exitosa (no en mount inicial).
 - El cliente consume `api-client.ts`; no importa el mock directamente.
 - El modelo `User` expuesto al cliente no contiene RUT, email ni OTP.
+- El flujo inicia en `intro` y no permite saltos arbitrarios entre estados.
 - Al retroceder desde OTP, se limpian `otp`, `user` y ambos contadores.
 - `handleRestart()` limpia todos los campos — sin pre-relleno de credenciales de prueba.
 - `receiptCode` usa `crypto.randomUUID()` — no timestamp predecible.
+- Al cerrar, recargar o abandonar la página, el cliente intenta invalidar la sesión con `DELETE /api/session` usando `keepalive`.
+- Si el usuario vuelve desde caché del navegador, la UI reinicia el flujo para evitar datos visualmente obsoletos.
+- Si se detecta otra pestaña activa del portal, la interfaz muestra advertencia para continuar en una sola.
 
 ### Cosas que NO hacer en este proyecto
 
@@ -368,12 +422,14 @@ Gestionados en dos capas:
 - **No mover la CSP a `next.config.mjs` como header estático** — pierde el nonce y bloquea los chunks en producción.
 - **No hacer `layout.tsx` estático** — debe llamar `await headers()` para forzar renderizado dinámico y que Next.js inyecte el nonce.
 - **No usar `setInterval` para el timer** — el proyecto usa `setTimeout` recursivo para evitar drift y doble-disparos en StrictMode.
+- **No eliminar las guardas de transición del flujo** — el cliente debe impedir saltos visuales inconsistentes entre estados.
 - **No llamar `getCandidates()` en el mont inicial** — solo debe llamarse tras OTP exitoso.
 - **No bypassear el rate limiter** deshabilitando el middleware en rutas sensibles.
 - **No guardar el RUT con puntos en el estado** — el formato con puntos es solo para visualización en el indicador.
 - **No pasar candidatos de un estamento a la vista de otro** — el servidor debe resolver siempre el padron desde la sesion autenticada.
 - **No consumir `mock-api.ts` desde componentes cliente** — la llamada debe pasar por el BFF interno.
 - **No usar `server-session.ts` en produccion tal como esta** — migrar a Redis, KV o base de datos compartida.
+- **No mostrar correo o identidad completa sin necesidad visual** — la UI actual usa masking parcial en OTP e instrucciones.
 
 ---
 
@@ -406,6 +462,7 @@ Gestionados en dos capas:
 | Fase 2c | UX avanzado: validador RUT en tiempo real, OTP 6 cajas, modal de confirmación, transiciones slide, skeletons exactos, fix CSP Vercel | ✅ Completado |
 | Fase 2d | Seguridad avanzada: rate limiting por IP, CSP report-uri, COOP/CORP headers, Permissions-Policy extendida, allowlist inputs, expiración por inactividad | ✅ Completado |
 | Fase 2e | Padrones por estamento: 3 usuarios ficticios, candidatos por padrón, OtpView con tarjeta de usuario, VotingView con badge de padrón, filtro dinámico de papeleta | ✅ Completado |
+| Fase 2f | Pulido UX frontend: IntroView, simulación guiada, contraste alto, soporte visible, guardas de sesión y advertencias multi-pestaña | ✅ Completado |
 | Fase 3 | Backend: autenticación real, envío de correo, base de datos | ⬜ Pendiente |
 | Fase 4 | Despliegue en producción (Vercel + BD serverless) | ⬜ Pendiente |
 

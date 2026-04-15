@@ -113,15 +113,16 @@ src/
 ├── middleware.ts           # Rate limiting por IP + CSP nonce por request (Edge Runtime)
 ├── app/
 │   ├── layout.tsx          # Root layout — fuerza renderizado dinámico para inyección de nonce
-│   ├── page.tsx            # Orquestador cliente — estado visual y navegación del flujo
+│   ├── page.tsx            # Orquestador cliente — intro, estado visual, guardas y navegación del flujo
 │   └── api/                # BFF interno de Next.js para auth, OTP, papeleta, voto y sesión
-│   └── globals.css         # Variables CSS, animaciones, componentes utilitarios
+│   └── globals.css         # Variables CSS, animaciones, componentes utilitarios y modo contraste alto
 ├── components/
 │   └── views/
+│       ├── IntroView.tsx   # Pantalla inicial — orientación previa, simulación y contraste alto
 │       ├── LoginView.tsx   # Paso 1: RUT (validador módulo 11 en tiempo real) + email
 │       ├── OtpView.tsx     # Paso 2: OTP en 6 cajas separadas con auto-avance y pegado
-│       ├── VotingView.tsx  # Paso 3: papeleta + timer + modal de confirmación
-│       └── SuccessView.tsx # Paso 4: check animado + código de comprobante
+│       ├── VotingView.tsx  # Paso 3: papeleta + timer + CTA sticky + modal de confirmación
+│       └── SuccessView.tsx # Paso 4: check animado + código de comprobante + estado demo
 ├── lib/
 │   ├── api-client.ts       # Cliente HTTP interno consumido por la UI
 │   ├── mock-api.ts         # Simulación de backend para desarrollo local, usada solo en servidor
@@ -135,12 +136,12 @@ src/
 ## Flujo de la aplicación
 
 ```
-login → otp → vote → success
-  ↑              ↓
-  └──────────────┘  (reiniciar demo)
+intro → login → otp → vote → success
+          ↑              ↓
+          └──────────────┘  (reiniciar demo)
 ```
 
-Cada transicion se produce solo si la llamada a las rutas API del servidor resuelve sin error. El cliente mantiene el estado visual del flujo y el servidor ejecuta la logica sensible.
+Cada transición se produce solo si la llamada a las rutas API del servidor resuelve sin error. El cliente mantiene el estado visual del flujo, impide transiciones inválidas y el servidor ejecuta la lógica sensible.
 
 **Límites de intentos:**
 - Login: máximo 5 fallidos → formulario bloqueado
@@ -148,26 +149,36 @@ Cada transicion se produce solo si la llamada a las rutas API del servidor resue
 
 **Expiración por inactividad:** 5 minutos sin interacción en estados `otp` o `vote` → reseteo automático a login.
 
+**Advertencia previa por inactividad:** 60 segundos antes del vencimiento, la UI muestra un aviso y permite mantener la sesión activa.
+
 ---
 
 ## UI / Experiencia
 
 | Funcionalidad | Descripción |
 |---|---|
+| IntroView | Pantalla previa con "qué necesitarás", soporte visible, simulación guiada y contraste alto |
 | Validador RUT en tiempo real | Algoritmo módulo 11 inline — ✓ verde si válido, ✗ rojo si no |
 | Formato RUT con puntos | `12345678` → `12.345.678-9` en el indicador (estado interno sin puntos) |
 | OTP 6 cajas | Auto-avance, backspace inteligente, flechas ← →, pegado distribuido |
-| Tarjeta de usuario en OTP | Avatar con iniciales, nombre completo, organización y badge de estamento |
+| Tarjeta de usuario en OTP | Avatar con iniciales, nombre parcialmente anonimizado, organización y badge de estamento |
 | Modal de confirmación | Muestra candidatura antes de emitir — cancelable |
 | Transiciones entre pasos | Slide derecha al avanzar, slide izquierda al retroceder |
 | Skeleton loaders exactos | Placeholders con la geometría real de VotingView (timer, tarjetas, botón) |
 | Barra de progreso | 3 pasos con checkmarks SVG animados y línea conectora |
+| Ayuda contextual por etapa | Franja breve con el paso actual y la siguiente acción esperada |
 | Timer con urgencia | Neutro → amber (≤30s) → rojo (≤10s) |
+| Aviso previo de expiración | Banner con countdown de 60 segundos antes del cierre por inactividad |
 | Spinners en botones | Feedback inmediato en cada acción asíncrona |
 | SuccessView | Check SVG animado + candidatura elegida + comprobante `SLEP-XX-XXXXXXXX` |
 | Escudo SVG institucional | Header de banda azul con tres capas y checkmark interno |
 | Padrones por estamento | Cada votante ve únicamente los candidatos de su padrón (directivos / docentes / asistentes) |
 | Badge de padrón | VotingView muestra el nombre del padrón activo con color propio |
+| Modo simulación guiada | Etiquetas visuales de demo para capacitación sin confundir el flujo con operación real |
+| Contraste alto institucional | Overrides visuales reforzados para mejorar legibilidad en jornadas presenciales |
+| CTA sticky en papeleta | En móvil, el botón principal queda más accesible y reduce scroll innecesario |
+| Detección de múltiples pestañas | Advertencia visual para continuar en una sola pestaña del portal |
+| Soporte visible | Franja persistente recordando la mesa de ayuda o canal del establecimiento |
 
 ---
 
@@ -232,6 +243,14 @@ El detalle completo de responsabilidades, endpoints esperados, decisiones que ca
 - **Login:** 5 intentos fallidos → formulario bloqueado
 - **OTP:** 3 intentos fallidos → regreso forzado a login
 
+### Guardas del cliente
+
+- El flujo inicia en `intro` y no permite saltos arbitrarios entre estados.
+- El cliente intenta limpiar sesión al cerrar, recargar o abandonar la página con `DELETE /api/session` usando `keepalive`.
+- Si el navegador restaura la página desde caché, la UI reinicia el flujo para evitar datos visuales obsoletos.
+- Si se detecta otra pestaña activa, la interfaz avisa al usuario para continuar en una sola.
+- OTP y correo se muestran parcialmente enmascarados cuando aparecen como referencia visual.
+
 ### Sesion servidor
 
 - **Cookie httpOnly:** `voting_session`
@@ -274,6 +293,7 @@ El detalle completo de responsabilidades, endpoints esperados, decisiones que ca
 | Fase 2c | UX avanzado: validador RUT, OTP 6 cajas, modal confirmación, transiciones slide, fix CSP Vercel | ✅ |
 | Fase 2d | Seguridad avanzada: rate limiting IP, report-uri, COOP/CORP, Permissions-Policy extendida, allowlist inputs, expiración por inactividad | ✅ |
 | Fase 2e | Padrones por estamento: 3 usuarios ficticios, candidatos por padrón, OtpView con tarjeta de usuario, VotingView con badge de padrón, filtro dinámico de papeleta | ✅ |
+| Fase 2f | Pulido frontend: IntroView, simulación guiada, contraste alto, soporte visible, guardas del flujo y advertencias multi-pestaña | ✅ |
 | Fase 3 | Integracion real: backend del Servicio Local o adaptador BFF conectado a backend existente | ⬜ |
 | Fase 4 | Despliegue producción: Vercel + BD serverless | ⬜ |
 

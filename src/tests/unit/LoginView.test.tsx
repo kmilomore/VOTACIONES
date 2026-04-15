@@ -36,12 +36,12 @@ describe('LoginView', () => {
 
   it('deshabilita el botón cuando isSubmitting es true', () => {
     renderLogin({ isSubmitting: true });
-    expect(screen.getByRole('button')).toBeDisabled();
+    expect(screen.getByRole('button', { name: /validando|continuar/i })).toBeDisabled();
   });
 
   it('deshabilita el botón cuando isLocked es true', () => {
     renderLogin({ isLocked: true });
-    expect(screen.getByRole('button')).toBeDisabled();
+    expect(screen.getByRole('button', { name: /continuar/i })).toBeDisabled();
   });
 
   it('muestra el mensaje de error cuando errorMessage tiene valor', () => {
@@ -66,5 +66,11 @@ describe('LoginView', () => {
   it('no muestra el chip de credenciales de demo en la UI', () => {
     renderLogin();
     expect(screen.queryByText(/demo:/i)).not.toBeInTheDocument();
+  });
+
+  it('muestra ayuda contextual desde el icono de pregunta', async () => {
+    renderLogin();
+    await userEvent.click(screen.getByRole('button', { name: /ayuda: identificacion/i }));
+    expect(screen.getByText(/Usa tu RUT sin puntos/i)).toBeInTheDocument();
   });
 });
