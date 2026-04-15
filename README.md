@@ -22,6 +22,7 @@ npm run build        # build de producción
 
 - Este proyecto entrega el frontend, la UX y el contrato de integracion.
 - Cada Servicio Local debe construir su propio backend de autenticacion, OTP, padron, emision de voto y auditoria.
+- Todo lo que depende del backend, de la persistencia, de la seguridad operativa o de la integracion productiva se documenta en `BACKEND_CONTRACT.md`.
 - El frontend debe integrarse manteniendo los endpoints y respuestas definidos en `BACKEND_CONTRACT.md`, o bien incorporando un adaptador compatible.
 - El mock actual existe solo para validacion funcional del frontend y no representa una implementacion electoral segura.
 
@@ -51,6 +52,7 @@ Este repositorio puede compartirse como maqueta institucional y base tecnica com
 - Reemplazar `src/lib/mock-api.ts` por un adaptador servidor conectado a su infraestructura.
 - Sustituir `src/lib/server-session.ts` por Redis, KV o base de datos segun su arquitectura.
 - Definir sus controles de auditoria, despliegue, respaldo y cumplimiento.
+- Seguir `BACKEND_CONTRACT.md` como documento principal para entender que hace hoy la maqueta, que parte debe respetarse y que parte debe reemplazarse antes de un uso real.
 
 ### Checklist minimo de adopcion
 
@@ -205,6 +207,8 @@ Este repositorio entrega el frontend blindado. Los controles implementados son v
 - Persistencia de sesión (Redis o equivalente)
 - Protección CSRF en mutaciones POST con cookie
 - Auditoría de eventos sin exponer la preferencia del votante en logs
+
+El detalle completo de responsabilidades, endpoints esperados, decisiones que cada Servicio Local debe tomar y componentes que deben reemplazarse antes de producción vive en `BACKEND_CONTRACT.md`.
 
 ## Seguridad
 

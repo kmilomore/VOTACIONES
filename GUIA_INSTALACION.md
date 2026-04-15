@@ -23,6 +23,8 @@ Lo que **cada SLEP decide por su cuenta**:
 
 > El frontend no impone ni restringe ninguna de esas decisiones. Solo exige que el backend respete el contrato de API definido en `BACKEND_CONTRACT.md`.
 
+> `BACKEND_CONTRACT.md` es la fuente principal de verdad para todo lo que depende del backend: endpoints, sesion, OTP, voto, admin, persistencia, seguridad y cambios obligatorios antes de produccion.
+
 ---
 
 ## Índice
@@ -412,6 +414,8 @@ login  →  otp  →  vote  →  success
 
 ## 10. API interna — contrato de integración
 
+Todo lo relacionado con integracion real, persistencia, seguridad operativa y responsabilidades del backend se centraliza en `BACKEND_CONTRACT.md`. Esta guia no duplica ese detalle para evitar que la documentacion se desincronice.
+
 Estos son los endpoints que la UI llama. El backend real del SLEP debe implementarlos con las mismas respuestas.
 
 ### `POST /api/auth/verify-credentials`
@@ -623,6 +627,8 @@ Cuando se cambien credenciales o candidatos en `mock-api.ts`, actualizar:
 ---
 
 ## 14. Limitaciones del mock de demo
+
+La lista completa de limitaciones del mock y de reemplazos requeridos por cada Servicio Local se mantiene en `BACKEND_CONTRACT.md`.
 
 Intencionales para simplificar la demo. **No deben existir en producción real.**
 

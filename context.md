@@ -115,62 +115,25 @@ type AppState = 'login' | 'otp' | 'vote' | 'success';
 
 ---
 
-## Capa servidor y Mock API
+## Capa servidor y contrato
 
-### BFF interno (`src/app/api/**`)
+La aplicacion utiliza Route Handlers de Next.js como BFF interno para desacoplar la UI de la logica sensible. Esa capa existe como referencia tecnica para la maqueta, pero no debe leerse como backend productivo.
 
-La aplicacion utiliza Route Handlers de Next.js como frontera servidor:
+Todo lo que depende de:
 
-| Ruta | Responsabilidad |
-|---|---|
-| `POST /api/auth/verify-credentials` | Valida RUT y correo e inicia sesion |
-| `POST /api/auth/verify-otp` | Verifica OTP sobre la sesion vigente |
-| `GET /api/candidates` | Devuelve la papeleta segun el padron asociado a la sesion |
-| `POST /api/votes` | Registra el voto y evita dobles emisiones en la demo local |
-| `DELETE /api/session` | Limpia la sesion al reiniciar o volver al login |
+- autenticacion,
+- OTP,
+- sesion,
+- padron,
+- voto,
+- auditoria,
+- admin,
+- persistencia,
+- seguridad operativa,
 
-### Sesion servidor (`src/lib/server-session.ts`)
+queda centralizado y documentado en `BACKEND_CONTRACT.md`.
 
-- Usa cookie httpOnly `voting_session`.
-- Mantiene estado temporal de autenticacion y OTP validado.
-- `SessionRecord` incluye `otpAttempts: number` — la sesión se destruye al llegar a 3 intentos fallidos de OTP.
-- El store se persiste en `globalThis` para sobrevivir recargas de módulos en el Hot Reload de desarrollo.
-- Usa memoria de proceso, por lo que no debe considerarse lista para producción multi-instancia.
-
-### Controles server-side implementados en código
-
-| Control | Archivo | Descripción |
-|---|---|---|
-| Límite OTP servidor | `server-session.ts` + `verify-otp/route.ts` | Contador `otpAttempts` en sesión; destruye sesión al 3er fallo |
-| Validación formato OTP | `verify-otp/route.ts` | `400` si el body no es exactamente 6 dígitos numéricos |
-| Validación formato RUT | `verify-credentials/route.ts` | `401` genérico si el formato no es `\d{7,8}-[\dkK]` |
-| Voto atómico | `votes/route.ts` | `hasUserVoted()` + `markUserAsVoted()` sin `await` entre ellos |
-| Sesión destruida post-voto | `votes/route.ts` | `destroySession()` + cookie `maxAge: 0` inmediatamente tras `submitVote` |
-| Filtrado de padrón servidor | `candidates/route.ts` | Estamento se lee de la sesión, no del cliente |
-
-### Mock API (`src/lib/mock-api.ts`)
-
-### Credenciales de prueba por estamento
-
-> No se muestran en pantalla ni se exponen al cliente. Consultar `VALID_USERS` en `src/lib/mock-api.ts` solo en desarrollo del lado servidor.
-
-| Estamento | RUT | Email | OTP |
-|---|---|---|---|
-| Directivos | `12345678-5` | `director@slep.cl` | `111111` |
-| Docentes | `16940271-k` | `docente@slep.cl` | `222222` |
-| Asistentes de la Educación | `19876543-0` | `asistente@slep.cl` | `333333` |
-
-### Funciones exportadas
-
-| Función | Signatura | Descripción |
-|---|---|---|
-| `verifyUserCredentials` | `(rut, email) → Promise<MockUserRecord>` | Busca en `VALID_USERS` por RUT + email normalizados. |
-| `verifyOtpCode` | `(otp, expectedOtp) → Promise<void>` | Valida el OTP contra el del usuario autenticado (pasado como segundo argumento). |
-| `getCandidates` | `(estamento) → Promise<Candidate[]>` | Filtra candidatos por `estamento`. Solo se llama tras OTP exitoso. Simula 500ms de latencia. |
-| `submitVote` | `(candidateId) → Promise<{receiptCode, candidate}>` | Registra el voto. `receiptCode` = `SLEP-{iniciales}-{UUID parcial}`. |
-| `toPublicUser` | `(user) → User` | Devuelve solo el modelo publico que la UI puede renderizar. |
-
-Todas las funciones simulan latencia aleatoria entre 700ms y 1400ms usando `setTimeout`.
+Este archivo `context.md` se concentra en arquitectura, componentes, flujo visual y decisiones de frontend. Si un Servicio Local necesita entender que debe reemplazar o implementar del lado servidor, la referencia correcta es `BACKEND_CONTRACT.md`.
 
 ---
 

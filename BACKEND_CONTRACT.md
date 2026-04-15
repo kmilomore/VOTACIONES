@@ -1,30 +1,213 @@
 # Contrato de integracion backend ↔ frontend
 
-Documento para el equipo de backend. Describe los endpoints que el frontend espera, el flujo de autenticacion, los requisitos de seguridad y los items que el equipo frontend debe eliminar antes de pasar a produccion.
+Documento principal para cualquier equipo que adopte esta maqueta.
 
-Este frontend se distribuye como esqueleto reutilizable para distintos Servicios Locales. El backend no forma parte de este repositorio: cada Servicio Local es responsable de implementar, desplegar y operar su propia capa de autenticacion, OTP, padron, emision de voto, persistencia y auditoria.
+Este repositorio entrega una base de frontend funcional, una UX completa y un BFF de referencia en Next.js. No entrega un backend productivo. Todo lo que dependa de autenticacion real, OTP real, padron real, persistencia, voto unico, auditoria, operacion o seguridad productiva debe ser implementado por cada Servicio Local.
 
-La expectativa de este documento es simple: cualquier equipo local puede conservar la experiencia de usuario del frontend siempre que su backend cumpla este contrato o entregue un adaptador equivalente.
-
----
-
-## Flujo de autenticación
-
-```
-[1] POST /api/auth/verify-credentials  → valida RUT + email, inicia sesión, dispara envío de OTP
-[2] POST /api/auth/verify-otp          → valida OTP sobre la sesión iniciada
-[3] GET  /api/candidates               → lista de candidatos (requiere sesión válida)
-[4] POST /api/votes                    → emite el voto (requiere sesión válida)
-[5] DELETE /api/session                → destruye la sesión local del flujo
-```
+Si un SLEP usa este proyecto como punto de partida, debe leer este archivo como contrato tecnico y como checklist de reemplazo del mock.
 
 ---
 
-## Endpoints esperados
+## Objetivo del repositorio
+
+Este proyecto existe para que distintos Servicios Locales puedan:
+
+- Reutilizar la experiencia de usuario del portal de votacion.
+- Reutilizar componentes, layout, estados de pantalla y flujo de navegacion.
+- Integrar su propio backend sin reescribir el frontend.
+- Entender con claridad que parte ya funciona en la maqueta y que parte debe reemplazarse antes de cualquier uso real.
+
+En otras palabras:
+
+- El frontend y la UX son compartidos.
+- El backend y la operacion son responsabilidad de cada SLEP.
+
+---
+
+## Alcance: que si entrega esta maqueta
+
+- Pantalla de login con RUT y correo.
+- Paso OTP con UI completa.
+- Papeleta digital con temporizador, seleccion y confirmacion.
+- Vista de exito con comprobante visual.
+- Panel administrativo demo con login, metricas y auditoria de ejemplo.
+- Rutas internas de Next.js que sirven como BFF de referencia.
+- Contratos TypeScript y estructura de integracion.
+- Mock funcional para desarrollo local y demostraciones.
+
+## Alcance: que NO entrega esta maqueta
+
+- Backend electoral productivo.
+- Integracion con padron institucional real.
+- Envio real de OTP por correo, SMS o proveedor corporativo.
+- Persistencia distribuida de sesiones o de votos.
+- Garantia legal de voto unico productivo.
+- Auditoria operativa o cumplimiento normativo final.
+- Observabilidad, monitoreo, respaldo o continuidad operacional.
+
+---
+
+## Arquitectura esperada
+
+La arquitectura recomendada para adopcion es esta:
+
+```text
+Navegador React
+  -> rutas internas /api/* del proyecto Next.js
+  -> adaptador servidor / BFF
+  -> backend real del Servicio Local
+  -> BD / Redis / proveedor OTP / auditoria / servicios internos
+```
+
+La UI no deberia hablar directamente con el backend electoral real si eso obliga a exponer secretos, tokens sensibles o logica de elegibilidad al navegador.
+
+---
+
+## Flujo funcional esperado
+
+```text
+[1] POST /api/auth/verify-credentials
+    valida identidad, inicia sesion y dispara OTP
+
+[2] POST /api/auth/verify-otp
+    valida OTP sobre la sesion ya iniciada
+
+[3] GET /api/candidates
+    devuelve solo la papeleta correspondiente al padron del votante
+
+[4] POST /api/votes
+    registra el voto y devuelve comprobante
+
+[5] DELETE /api/session
+    destruye la sesion del flujo de votacion
+
+[6] POST /api/admin/login
+    autentica acceso administrativo
+
+[7] GET /api/admin/metrics
+    devuelve metricas para dashboard administrativo
+
+[8] GET /api/admin/audit
+    devuelve eventos de auditoria
+
+[9] DELETE /api/admin/logout
+    cierra la sesion administrativa
+```
+
+---
+
+## Que depende del backend y debe cambiar cada SLEP
+
+Esta es la parte central del documento. Todo lo siguiente es responsabilidad del Servicio Local que adopta la maqueta.
+
+### 1. Identidad del votante
+
+Cada SLEP debe decidir:
+
+- Como valida RUT + correo contra su padron.
+- Si usa correo institucional, correo personal o ambos.
+- Que reglas de elegibilidad aplica.
+- Como maneja votantes no encontrados, bloqueados o ya sufragados.
+
+La maqueta hoy solo simula esa validacion.
+
+### 2. OTP
+
+Cada SLEP debe decidir:
+
+- Proveedor de OTP: correo, SMS, proveedor corporativo o sistema interno.
+- Tiempo de expiracion del codigo.
+- Politica de reenvio.
+- Politica de intentos fallidos.
+- Registro de auditoria del envio y la validacion.
+
+La maqueta usa OTP fijo en memoria. Eso solo sirve para demo.
+
+### 3. Sesion del flujo de votacion
+
+Cada SLEP debe decidir:
+
+- Si usa cookie httpOnly, sesion opaca en BFF o token interno equivalente.
+- Donde persiste la sesion: Redis, KV, BD u otra capa.
+- Como invalida la sesion por expiracion, cierre manual, error o voto emitido.
+- Como protege las mutaciones frente a CSRF si usa cookie.
+
+La maqueta hoy guarda la sesion en memoria del proceso.
+
+### 4. Padron y candidatos
+
+Cada SLEP debe decidir:
+
+- Como obtiene el padron real.
+- Como segmenta por estamento.
+- Como administra candidatos, vigencia y metadatos.
+- Como versiona elecciones o procesos distintos.
+
+La maqueta usa datos estaticos en archivos TS.
+
+### 5. Registro del voto
+
+Cada SLEP debe decidir:
+
+- Como garantiza voto unico a nivel de BD.
+- Como resuelve concurrencia real.
+- Como registra comprobante o folio.
+- Como evita exponer la preferencia del votante en logs.
+- Como modela cierres de proceso, aperturas y estados de eleccion.
+
+La maqueta no reemplaza una transaccion real ni un modelo electoral productivo.
+
+### 6. Panel administrativo
+
+Cada SLEP debe decidir:
+
+- Como autentica administradores.
+- Si usa PIN, SSO, LDAP, IdP institucional o MFA.
+- Donde persiste auditoria y metricas.
+- Que roles pueden ver que informacion.
+- Como limita acceso, IPs, sesiones y trazabilidad.
+
+La maqueta usa un admin demo para mostrar la experiencia, no para operar en productivo.
+
+### 7. Seguridad operativa y despliegue
+
+Cada SLEP debe decidir:
+
+- Infraestructura de despliegue.
+- Observabilidad, logs y alertas.
+- Cifrado en transito y en reposo.
+- Politicas de respaldo.
+- Continuidad operacional.
+- Cumplimiento normativo y legal.
+
+---
+
+## Componentes del repositorio que son solo referencia y deben reemplazarse
+
+| Componente | Archivo | Estado en la maqueta | Que debe hacer el SLEP |
+|---|---|---|---|
+| Mock de usuarios, OTP y candidatos | `src/lib/mock-api.ts` | Demo local | Sustituir por integracion real o adaptador servidor |
+| Sesion del flujo de voto | `src/lib/server-session.ts` | Memoria de proceso | Reemplazar por Redis, KV o BD |
+| Sesion admin | `src/lib/admin-session.ts` | Memoria de proceso | Reemplazar por store persistente y politica real de autenticacion |
+| Metricas admin | `src/lib/metrics-store.ts` | Memoria de proceso | Reemplazar por consulta real a origen persistente |
+| Validacion de identidad | `src/app/api/auth/verify-credentials/route.ts` | Demo con mock | Conectar a padron y backend real |
+| OTP | `src/app/api/auth/verify-otp/route.ts` | Demo con mock | Conectar a validador OTP real |
+| Papeleta | `src/app/api/candidates/route.ts` | Demo con datos estaticos | Consultar backend real segun sesion |
+| Emision de voto | `src/app/api/votes/route.ts` | Demo local | Persistir voto real y garantizar atomicidad |
+| Login admin | `src/app/api/admin/login/route.ts` | Demo local | Integrar autenticacion administrativa real |
+| Auditoria admin | `src/app/api/admin/audit/route.ts` | Demo local | Leer desde auditoria real |
+| Metricas admin | `src/app/api/admin/metrics/route.ts` | Demo local | Leer desde fuente real |
+
+---
+
+## Contrato minimo que el frontend espera
+
+El frontend puede mantenerse igual si el BFF o el backend del SLEP conserva estas respuestas.
 
 ### 1. `POST /api/auth/verify-credentials`
 
-**Cuerpo de la solicitud:**
+Solicitud:
+
 ```json
 {
   "rut": "12345678-9",
@@ -32,211 +215,211 @@ La expectativa de este documento es simple: cualquier equipo local puede conserv
 }
 ```
 
-**Respuesta exitosa `200`:**
+Respuesta `200`:
+
 ```json
 {
   "user": {
     "fullName": "Nombre completo del votante",
-    "organization": "SLEP COLCHAGUA
+    "organization": "Nombre del Servicio Local",
+    "estamento": "docentes"
   }
 }
 ```
 
-**Respuesta de error `401`:**
+Respuesta `401`:
+
 ```json
-{ "message": "No encontramos una coincidencia valida para el RUT y correo ingresados." }
+{
+  "message": "No encontramos una coincidencia valida para el RUT y correo ingresados."
+}
 ```
 
-> **Nota de seguridad:** el mensaje de error **nunca debe indicar qué campo falló** (RUT vs correo). Deben fallar juntos para evitar ataques de enumeración de usuarios.
+Notas:
 
----
+- No revelar si fallo el RUT o el correo por separado.
+- Debe iniciar sesion del flujo.
+- Debe disparar o preparar el OTP real.
 
 ### 2. `POST /api/auth/verify-otp`
 
-> El frontend **no envia** el OTP junto con credenciales. Es un paso separado y el backend debe asociarlo a la sesion iniciada en el paso anterior.
+Solicitud:
 
-**Cuerpo de la solicitud:**
 ```json
-{ "otp": "123456" }
+{
+  "otp": "123456"
+}
 ```
 
-**Respuesta exitosa `200`:**
+Respuesta `200`:
+
 ```json
-{ "ok": true }
+{
+  "ok": true
+}
 ```
 
-**Respuesta de error `401`:**
+Respuesta `401`:
+
 ```json
-{ "message": "El codigo OTP no es valido o ha expirado." }
+{
+  "message": "El codigo OTP no es valido o ha expirado."
+}
 ```
 
-> **Nota de seguridad:** el OTP **debe tener expiración server-side** (recomendado: 5 minutos). El frontend tiene un temporizador de 120 segundos en la papeleta, pero **no limita la validez del OTP**. El servidor es la única fuente de verdad.
+Notas:
 
----
+- El OTP depende de la sesion ya abierta.
+- El frontend no reenvia identidad junto al OTP.
+- La validez real del OTP siempre es server-side.
 
 ### 3. `GET /api/candidates`
 
-**Mecanismo requerido:**
+Respuesta `200`:
 
-Sesion valida ya asociada al votante autenticado. En este esqueleto, la referencia es una cookie httpOnly. Si un Servicio Local usa otro mecanismo, debe mantener el mismo comportamiento funcional para el frontend.
-
-**Respuesta exitosa `200`:**
 ```json
 [
   {
     "id": "marisol-huerta",
     "name": "Marisol Huerta",
     "role": "Representante de estamento docente",
-    "slogan": "...",
+    "slogan": "Participacion informada con foco en continuidad pedagogica.",
     "initials": "MH",
-    "accentColor": "#8c4f2f"
+    "accentColor": "#8c4f2f",
+    "estamento": "docentes"
   }
 ]
 ```
 
----
+Notas:
+
+- Debe devolver solo candidatos del padron habilitado.
+- La fuente del padron no puede ser el cliente.
 
 ### 4. `POST /api/votes`
 
-**Mecanismo requerido:**
+Solicitud:
 
-Sesion valida ya asociada al votante autenticado.
-
-**Cuerpo de la solicitud:**
-```json
-{ "candidateId": "marisol-huerta" }
-```
-
-**Respuesta exitosa `200`:**
 ```json
 {
-  "receiptCode": "SLEP-MH-<identificador único>",
-  "candidate": { "id": "...", "name": "..." }
+  "candidateId": "marisol-huerta"
 }
 ```
 
-**Respuesta de error `409` (voto duplicado):**
+Respuesta `200`:
+
 ```json
-{ "message": "Ya has emitido tu voto en esta eleccion." }
+{
+  "receiptCode": "SLEP-MH-AB12CD34",
+  "candidate": {
+    "id": "marisol-huerta",
+    "name": "Marisol Huerta"
+  }
+}
 ```
 
-> **Nota de seguridad:** la prevención de doble voto **debe ser server-side**. El frontend no tiene mecanismo para detectarlo.
+Respuesta `409`:
 
----
+```json
+{
+  "message": "Ya has emitido tu voto en esta eleccion."
+}
+```
+
+Notas:
+
+- La proteccion contra doble voto debe ser server-side.
+- La sesion debe invalidarse despues de votar.
 
 ### 5. `DELETE /api/session`
 
-**Objetivo:**
+Respuesta `204` sin cuerpo.
 
-- Cerrar el flujo al volver al login.
-- Limpiar la sesion cuando el usuario reinicia la demo.
-- Invalidar la sesion por inactividad o salida manual.
+Uso:
 
-**Respuesta exitosa `204`:**
+- Reinicio manual del flujo.
+- Expiracion por inactividad.
+- Vuelta al login.
 
-Sin cuerpo.
+### 6. `POST /api/admin/login`
 
----
+Solicitud:
 
-## Gestion de sesion / token
-
-El frontend actualmente opera mejor con una sesion servidor administrada por el BFF de Next.js. Al integrar el backend, cada Servicio Local puede elegir una estrategia interna, pero hacia el frontend debe conservar una experiencia equivalente:
-
-| Estrategia | Ventaja | Consideración |
-|---|---|---|
-| **Cookie httpOnly** (recomendado) | El token nunca es accesible por JS; proteccion XSS automatica | Requiere `SameSite=Strict` o `Lax` + CSRF token para mutaciones |
-| **Sesion opaca en BFF** | El cliente nunca ve el token del backend real | Requiere mantener un adaptador servidor en Next.js |
-| **JWT en memoria React** | Posible, pero menos robusto para este esqueleto | Expone mas logica al cliente y complica el refresco de pagina |
-
-> Si se usa cookie httpOnly, el endpoint `POST /api/votes` debe incluir proteccion CSRF (cabecera custom o token doble-submit).
-
----
-
-## Responsabilidad por Servicio Local
-
-- Este repositorio entrega la arquitectura del frontend y el contrato de integracion.
-- Cada Servicio Local define su modelo de datos, proveedor de correo o mensajeria OTP, trazabilidad, despliegue y cumplimiento normativo.
-- Las reglas de padron, elegibilidad, cierre de mesa, auditoria y resguardo de evidencia deben implementarse del lado servidor.
-- Si un Servicio Local necesita variaciones de infraestructura, debe mantener compatibilidad funcional con este contrato para no romper el frontend compartido.
-
----
-
-## Requisitos de seguridad para el backend
-
-Los controles marcados con ✅ ya están implementados en este repositorio. Los marcados con ⏳ son responsabilidad del backend del Servicio Local.
-
-| Área | Requisito | Estado |
-|---|---|---|
-| **Rate limiting** | 20 req/min por IP en todas las rutas API (middleware Edge). Límite de 5 intentos de login en la UI. Límite de 3 intentos OTP validado en servidor. | ✅ Frontend |
-| **OTP server-side** | Contador `otpAttempts` en `SessionRecord`; sesión destruida automáticamente al 3er fallo. | ✅ Frontend |
-| **OTP dinámico** | Generación y envío real por correo o SMS con expiración. El mock usa `otp` estático solo para demo. | ⏳ Backend SLEP |
-| **Validación formato** | OTP: `^\d{6}$` en servidor antes de consumir intentos. RUT: `^\d{7,8}-[\dkK]$` antes de consultar padrón. Email: máx 254 chars. | ✅ Frontend |
-| **Voto único** | `hasUserVoted()` + `markUserAsVoted()` sin `await` entre ellos (atómico en Node.js single-thread). En producción multi-instancia: transacción BD. | ✅ Frontend / ⏳ BD producción |
-| **Sesión post-voto** | `destroySession()` + `maxAge: 0` emitidos inmediatamente tras `submitVote` exitoso. | ✅ Frontend |
-| **Logging de auditoría** | Registrar IP, timestamp y `userId` de cada evento sin registrar el valor del voto. | ⏳ Backend SLEP |
-| **Sesión httpOnly** | Cookie `voting_session` con `HttpOnly`, `SameSite=Lax`, `Secure` (producción), `maxAge=600s`. | ✅ Frontend |
-| **HTTPS** | `Strict-Transport-Security: max-age=31536000; includeSubDomains; preload` activo. | ✅ Frontend |
-| **CORS** | Configurar origen exacto del frontend en el backend. No usar `*`. | ⏳ Backend SLEP |
-| **CSRF** | Sin token CSRF implícito en el mock de demo. Con cookie httpOnly en producción: cabecera `X-Requested-With` o doble-submit. | ⏳ Backend SLEP |
-| **CSP** | Nonce-based por request en middleware Edge. En producción sin `unsafe-inline` ni `unsafe-eval`. | ✅ Frontend |
-
----
-
-## Items pendientes del equipo frontend antes de producción
-
-| Archivo | Cambio | Estado |
-|---|---|---|
-| `src/app/page.tsx` | Cliente consume `src/lib/api-client.ts` sin importar `mock-api.ts` | ✅ Hecho |
-| `src/app/page.tsx` | Expiración por inactividad en estados `otp` y `vote` | ✅ Hecho |
-| `src/app/api/**` | Validación formato RUT y OTP en servidor antes de consultar padrón | ✅ Hecho |
-| `src/lib/server-session.ts` | Contador OTP server-side con destrucción automática de sesión | ✅ Hecho |
-| `src/app/api/votes/route.ts` | Voto atómico (check + mark sin await intermedio) | ✅ Hecho |
-| `src/app/api/votes/route.ts` | Sesión destruida inmediatamente tras voto exitoso | ✅ Hecho |
-| `src/lib/server-session.ts` | Store persistido en `globalThis` para sobrevivir Hot Reload | ✅ Hecho |
-| `src/types/index.ts` | Modelo público `User` sin `rut`, `email`, `otp` | ✅ Hecho |
-| `next.config.mjs` | CSP nonce-based en middleware, HSTS, CORP | ✅ Hecho |
-| `src/app/page.tsx` | Eliminar texto de credenciales visibles en UI (antes de demo pública) | ⏳ Pendiente |
-| `src/lib/mock-api.ts` | Reemplazar mock por adaptador conectado al backend real del SLEP | ⏳ Pendiente (cada SLEP) |
-| `src/lib/server-session.ts` | Sustituir store en memoria por Redis, KV o BD | ⏳ Pendiente (cada SLEP) |
-| CSRF | Agregar protección CSRF en `POST /api/votes` y `POST /api/auth/*` | ⏳ Pendiente con backend real |
-
----
-
-## Sustitucion del mock en la capa servidor
-
-Al conectar el backend real, reemplazar el uso de `mock-api.ts` dentro de `src/app/api/**` o dentro de un adaptador servidor. El cliente no deberia cambiar.
-
-```typescript
-// ANTES (mock del lado servidor)
-import { verifyUserCredentials } from '@/lib/mock-api';
-const user = await verifyUserCredentials(rut, email);
-
-// DESPUES (adaptador servidor conectado al backend real)
-const response = await fetch('https://backend-local.example/api/auth/verify-credentials', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ rut, email }),
-});
-if (!response.ok) {
-  const { message } = await response.json();
-  throw new Error(message);
+```json
+{
+  "pin": "1234"
 }
-const { user } = await response.json();
 ```
 
-El patron es identico para `verifyOtpCode`, `getCandidates` y `submitVote`. La UI puede seguir consumiendo las mismas rutas internas de Next.js.
+Respuesta `200`:
+
+```json
+{
+  "ok": true
+}
+```
+
+Notas:
+
+- El mecanismo real puede no ser PIN, pero el BFF debe adaptar la respuesta a la UI o esta UI debe ajustarse si cambia el flujo.
+
+### 7. `GET /api/admin/metrics`
+
+Respuesta `200`:
+
+```json
+{
+  "lastUpdated": 1710000000000,
+  "padron": {
+    "total": 336,
+    "directivos": 22,
+    "docentes": 190,
+    "asistentes": 124
+  },
+  "votes": {
+    "directivos": 0,
+    "docentes": 0,
+    "asistentes": 0,
+    "total": 0
+  },
+  "estamentos": [],
+  "schools": []
+}
+```
+
+### 8. `GET /api/admin/audit`
+
+Respuesta `200`:
+
+```json
+{
+  "log": []
+}
+```
+
+### 9. `DELETE /api/admin/logout`
+
+Respuesta `200`:
+
+```json
+{
+  "ok": true
+}
+```
 
 ---
 
-## Interfaces TypeScript vigentes
+## Modelos TypeScript que el frontend ya usa
 
-```typescript
-// src/types/index.ts — compartir con backend para alinear contratos
+Si el backend del SLEP entrega este shape, el frontend no necesita cambios estructurales.
+
+```ts
+type Estamento = 'directivos' | 'docentes' | 'asistentes';
 
 interface User {
-  fullName: string;     // se muestra en la papeleta
-  organization: string; // se muestra en la vista de éxito
-  estamento: Estamento; // define el padron visible en la UI
+  fullName: string;
+  organization: string;
+  estamento: Estamento;
 }
 
 interface Candidate {
@@ -244,10 +427,89 @@ interface Candidate {
   name: string;
   role: string;
   slogan: string;
-  initials: string;     // 2 caracteres, para el badge visual
-  accentColor: string;  // hex, para el acento visual de la tarjeta
+  initials: string;
+  accentColor: string;
   estamento: Estamento;
 }
-
-type AppState = 'login' | 'otp' | 'vote' | 'success';
 ```
+
+---
+
+## Que hace hoy la maqueta y como debe leerse
+
+### Lo que si esta resuelto en esta base
+
+- La experiencia de usuario del flujo.
+- La navegacion entre estados.
+- La capa visual institucional.
+- La separacion entre cliente y logica sensible a traves de `/api/*`.
+- Accesibilidad base del login, modal de confirmacion y tabla admin.
+- Un contrato estable que cada Servicio Local puede adoptar.
+
+### Lo que no debe interpretarse como solucion productiva
+
+- OTP fijo o predecible.
+- Store en memoria para sesiones.
+- Store en memoria para metricas.
+- Auditoria en memoria.
+- Login admin demo.
+- Candidatos y escuelas embebidos en archivos TS.
+
+---
+
+## Cambios obligatorios antes de cualquier uso real
+
+Cada Servicio Local debe revisar y resolver al menos esto:
+
+1. Reemplazar todos los mocks por integracion real.
+2. Persistir sesiones y votos fuera de memoria local.
+3. Garantizar voto unico con atomicidad real en BD.
+4. Implementar OTP real con expiracion y trazabilidad.
+5. Implementar autenticacion administrativa real.
+6. Agregar observabilidad y auditoria persistente.
+7. Revisar CSRF si se usa cookie httpOnly para mutaciones.
+8. Ajustar CORS, dominios, despliegue y secretos segun su infraestructura.
+9. Revisar privacidad y cumplimiento normativo local.
+
+---
+
+## Checklist de adopcion por Servicio Local
+
+### Personalizacion institucional
+
+- Cambiar nombre del Servicio Local.
+- Cambiar logo, fondos y textos institucionales.
+- Cambiar establecimientos y padrones de ejemplo.
+- Cambiar candidatos de ejemplo.
+
+### Integracion tecnica
+
+- Mantener el frontend consumiendo rutas internas de Next.js o adaptar la UI de forma consistente.
+- Conectar cada ruta `/api/*` a backend real.
+- Mantener shapes de respuesta compatibles con la UI.
+- Proteger las mutaciones del flujo.
+
+### Produccion real
+
+- Reemplazar stores en memoria.
+- Implementar secretos y variables de entorno.
+- Endurecer auditoria y monitoreo.
+- Validar recuperacion ante errores y reinicios.
+- Ejecutar pruebas funcionales y de seguridad antes de despliegue.
+
+---
+
+## Recomendacion de implementacion
+
+La forma mas estable de reutilizar esta maqueta es:
+
+1. Conservar la UI y los componentes tal como estan.
+2. Conservar las rutas internas de Next.js como BFF.
+3. Reemplazar adentro de esas rutas la logica mock por llamadas al backend real del SLEP.
+4. Mantener las respuestas del contrato para no tener que reescribir el frontend.
+
+---
+
+## Resumen ejecutivo para handoff
+
+Este repositorio es una maqueta funcional y una base comun de frontend. No es una solucion electoral productiva completa. Cada Servicio Local debe implementar su propio backend y reemplazar los componentes mock o en memoria descritos en este documento. Mientras se respete este contrato, la UI puede reutilizarse con cambios minimos.

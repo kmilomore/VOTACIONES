@@ -137,7 +137,6 @@ export default function AdminPage() {
   if (!authenticated) {
     return (
       <div
-        className="min-h-screen flex items-center justify-center px-4"
         className="min-h-screen flex items-center justify-center px-4 bg-[#082f5a]"
         style={{ backgroundImage: 'linear-gradient(135deg, #061d3d 0%, #0a3566 52%, #0b5294 100%)' }}
       >
