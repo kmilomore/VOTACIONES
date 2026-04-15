@@ -8,6 +8,8 @@ function renderOtp(overrides: Partial<React.ComponentProps<typeof OtpView>> = {}
   const props: React.ComponentProps<typeof OtpView> = {
     email: 'usuario@slep.cl',
     otp: '',
+    isPrivacyMode: false,
+    isSimplifiedMode: false,
     isSubmitting: false,
     isLocked: false,
     errorMessage: null,
@@ -73,5 +75,20 @@ describe('OtpView', () => {
     renderOtp();
     await userEvent.click(screen.getByRole('button', { name: /ayuda: codigo otp/i }));
     expect(screen.getByText(/Puedes escribir o pegar los seis digitos/i)).toBeInTheDocument();
+  });
+
+  it('oculta el nombre visible cuando privacy mode está activo', () => {
+    renderOtp({
+      isPrivacyMode: true,
+      user: {
+        fullName: 'Test Votante',
+        organization: 'Escuela Test',
+        estamento: 'docentes',
+        id: '1',
+        email: 'usuario@slep.cl',
+        rut: '11111111-1',
+      },
+    });
+    expect(screen.getByText(/Participante verificado/i)).toBeInTheDocument();
   });
 });

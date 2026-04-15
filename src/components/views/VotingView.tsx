@@ -22,6 +22,8 @@ interface VotingViewProps {
   voterName: string;
   estamento: Estamento;
   isDemoMode: boolean;
+  isPrivacyMode: boolean;
+  isSimplifiedMode: boolean;
   selectedCandidateId: string | null;
   remainingSeconds: number;
   hasExpired: boolean;
@@ -42,6 +44,8 @@ export function VotingView({
   voterName,
   estamento,
   isDemoMode,
+  isPrivacyMode,
+  isSimplifiedMode,
   selectedCandidateId,
   remainingSeconds,
   hasExpired,
@@ -55,7 +59,7 @@ export function VotingView({
   const cancelButtonRef = useRef<HTMLButtonElement | null>(null);
   const modalPanelRef = useRef<HTMLDivElement | null>(null);
   const selectedCandidate = candidates.find((c) => c.id === selectedCandidateId) ?? null;
-  const displayName = voterName.split(/\s+/).filter(Boolean)[0] ?? voterName;
+  const displayName = isPrivacyMode ? 'Participante' : voterName.split(/\s+/).filter(Boolean)[0] ?? voterName;
 
   function handleConfirmClick() {
     if (!selectedCandidateId || hasExpired) return;
@@ -112,7 +116,7 @@ export function VotingView({
           </p>
           <div className="mt-1 flex items-start justify-between gap-3">
             <h1 className="m-0 font-serif text-[clamp(20px,2.6vw,28px)] text-ink leading-none tracking-tight">
-              Emision de voto
+              {isSimplifiedMode ? 'Elige una opcion' : 'Emision de voto'}
             </h1>
             <HelpTooltip
               title="Papeleta"
@@ -122,7 +126,9 @@ export function VotingView({
           </div>
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <p className="m-0 text-sm text-ink-muted font-sans leading-relaxed">
-              {displayName}, selecciona una candidatura y confirma tu voto antes de que expire la sesion.
+              {isSimplifiedMode
+                ? `${displayName}, marca una candidatura y confirma una vez.`
+                : `${displayName}, selecciona una candidatura y confirma tu voto antes de que expire la sesion.`}
             </p>
             <span
               className="inline-flex shrink-0 px-2.5 py-1 rounded-full text-[10px] font-bold font-sans uppercase tracking-wide"
@@ -139,6 +145,9 @@ export function VotingView({
                 Simulacion guiada
               </span>
             ) : null}
+            <span className="inline-flex shrink-0 px-2.5 py-1 rounded-full text-[10px] font-bold font-sans uppercase tracking-wide border border-[#0b5294]/15 bg-[#0b5294]/6 text-[#0b5294]">
+              Flujo verificado
+            </span>
           </div>
         </div>
 
@@ -182,9 +191,11 @@ export function VotingView({
               <span className="text-[11px] font-sans font-medium text-ink-muted leading-tight">
                 {candidate.role}
               </span>
-              <span className="text-[11px] font-sans italic text-ink-muted/70 leading-snug line-clamp-2">
-                &ldquo;{candidate.slogan}&rdquo;
-              </span>
+              {!isSimplifiedMode ? (
+                <span className="text-[11px] font-sans italic text-ink-muted/70 leading-snug line-clamp-2">
+                  &ldquo;{candidate.slogan}&rdquo;
+                </span>
+              ) : null}
             </button>
           );
         })}
@@ -231,7 +242,7 @@ export function VotingView({
                 Confirma tu voto
               </h2>
               <p id="modal-description" className="mt-1.5 mb-0 text-sm text-ink-muted font-sans">
-                Esta accion no se puede deshacer.
+                {isSimplifiedMode ? 'Revisa tu opcion antes de continuar.' : 'Esta accion no se puede deshacer.'}
               </p>
             </div>
             <div className="p-5 grid gap-4">

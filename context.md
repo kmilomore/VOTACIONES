@@ -45,11 +45,11 @@ src/
 │   └── globals.css         # Variables CSS, paleta institucional, componentes
 ├── components/
 │   └── views/              # Vistas aisladas, una por cada estado del flujo
-│       ├── IntroView.tsx   # Pantalla inicial — orientación previa, simulación guiada y contraste alto
-│       ├── LoginView.tsx   # Paso 1: RUT (número + dígito verificador) + email
-│       ├── OtpView.tsx     # Paso 2: código OTP de 6 dígitos + tarjeta de usuario anonimizada
-│       ├── VotingView.tsx  # Paso 3: papeleta + temporizador 120s + CTA sticky + modal de confirmación
-│       └── SuccessView.tsx # Paso 4: confirmación animada + código de comprobante + estado demo
+│       ├── IntroView.tsx   # Pantalla inicial — orientación previa, simulación guiada, contraste, privacidad y lectura simplificada
+│       ├── LoginView.tsx   # Paso 1: RUT (número + dígito verificador) + email con copy simplificado opcional
+│       ├── OtpView.tsx     # Paso 2: código OTP de 6 dígitos + tarjeta de usuario anonimizada + privacidad reforzada
+│       ├── VotingView.tsx  # Paso 3: papeleta + temporizador 120s + CTA sticky + modal + sello de flujo verificado
+│       └── SuccessView.tsx # Paso 4: confirmación animada + comprobante imprimible + estado demo
 ├── lib/
 │   ├── api-client.ts       # Cliente HTTP consumido por la UI
 │   ├── mock-api.ts         # Simulación de backend para desarrollo local, usada en servidor
@@ -182,8 +182,8 @@ Este archivo `context.md` se concentra en arquitectura, componentes, flujo visua
 
 ### Tipografía
 
-- **UI / Labels / Botones:** `Segoe UI, system-ui, -apple-system, sans-serif`
-- **Títulos / Cuerpo:** `Cambria, Georgia, 'Times New Roman', serif`
+- **UI / Labels / Botones:** `Museo Sans` con fallbacks `Segoe UI, system-ui, -apple-system, sans-serif`
+- **Títulos / Cuerpo:** `Museo Sans` reutilizada también como familia serif operativa para mantener coherencia institucional
 
 ### Componentes CSS clave
 
@@ -201,6 +201,8 @@ Este archivo `context.md` se concentra en arquitectura, componentes, flujo visua
 | `.modal-backdrop` | Overlay del modal de confirmación (fixed, blur, z-50) |
 | `.modal-panel` | Panel del modal con animación spring de entrada |
 | `.portal-contrast-high` | Overrides de alto contraste para fondos, texto, inputs, botones y estados |
+| `.portal-simplified-mode` | Ajuste global de lectura simplificada para densidad y ritmo del texto |
+| `.receipt-card` | Tarjeta del comprobante final con borde interno punteado e impresión limpia |
 
 ### IntroView — Orientación previa
 
@@ -208,6 +210,8 @@ Antes del login, la aplicación muestra una pantalla breve con:
 - lista de elementos necesarios para completar el proceso,
 - activación de **modo simulación guiada**,
 - activación de **contraste alto institucional**,
+- activación de **privacy mode** para reducir datos visibles en pantalla,
+- activación de **lectura simplificada** para copy más directo,
 - recordatorio visible del canal de soporte durante la jornada.
 
 La intención es reducir dudas antes del primer input y evitar que el usuario entre al flujo sin contexto mínimo.
@@ -240,11 +244,15 @@ Despues de login exitoso, la vista OTP muestra una tarjeta con:
 
 El correo mostrado en las instrucciones también se presenta enmascarado para disminuir exposición visual innecesaria.
 
+Si el usuario activó **privacy mode**, la tarjeta deja de mostrar el nombre y lo reemplaza por el estado neutral **Participante verificado**.
+
 ### VotingView — Badge de padrón en la papeleta
 
 El encabezado de la papeleta muestra el nombre del votante acompañado de un badge "Padrón: {estamento}" con el color del estamento correspondiente, dejando claro a qué papeleta pertenece.
 
 Si el usuario activó modo simulación, la vista agrega además un badge **Simulación guiada** para evitar ambigüedad con una jornada real.
+
+La vista agrega también un sello **Flujo verificado** y, si está activo `privacy mode`, reemplaza el nombre visible del votante por una referencia neutral.
 
 ### Barra de progreso de pasos
 
@@ -270,7 +278,13 @@ Entre la barra y la vista activa, `page.tsx` inyecta una franja breve de ayuda c
 - **Navegación con flechas:** ← → mueven el foco entre cajas.
 - **Pegado:** `onPaste` distribuye hasta 6 dígitos en las cajas y posiciona el foco correctamente.
 - El botón de submit se deshabilita hasta que los 6 dígitos estén completos.
-- `autoComplete="one-time-code"` en la primera caja para sugerencia del browser.
+- El formulario y cada caja fuerzan `autoComplete="off"`, `autoCorrect="off"` y `spellCheck={false}` para evitar autocompletado indeseado en puestos compartidos.
+
+### LoginView — endurecimiento de autofill y copy adaptable
+
+- El formulario usa `autoComplete="off"` para RUT, dígito verificador y correo.
+- Los campos desactivan autocorrección, capitalización inesperada y spellcheck donde corresponde.
+- Si está activo **modo de lectura simplificada**, el título y las instrucciones se reducen a copy más corto y directo.
 
 ### VotingView — Modal de confirmación
 
@@ -293,8 +307,16 @@ En móvil, el CTA principal de confirmación se mantiene dentro de una banda sti
 
 El skeleton de carga de papeleta replica la geometría real del `VotingView`:
 - Fila superior: bloque de texto (3 líneas) + placeholder rectangular del timer (`120×66px`).
+- Chips/badges superiores adicionales para simulación, privacidad o flujo verificado.
 - Grid de tarjetas: badge circular + línea de nombre (22px) + rol + 2 líneas de slogan.
 - Fila inferior: placeholder del botón «Confirmar voto».
+
+### SuccessView — comprobante imprimible
+
+- La pantalla final muestra un bloque `receipt-card` con resumen del voto, código de comprobante, fecha de emisión y estado del flujo.
+- Incluye un botón **Imprimir comprobante** que llama `window.print()`.
+- En `privacy mode`, el encabezado del comprobante evita repetir la identidad visible del votante y usa copy neutral.
+- La hoja de impresión oculta overlays, fondos y CTAs de pantalla para dejar un comprobante limpio.
 
 ---
 
@@ -311,6 +333,21 @@ El skeleton de carga de papeleta replica la geometría real del `VotingView`:
 - Permite recorrer el flujo con señalización visual de demo.
 - Mantiene etiquetas visibles en intro, papeleta y pantalla final.
 - Sirve para capacitación y validación de UX sin confundir el recorrido con operación real.
+
+### Privacy mode
+
+- Reduce datos personales visibles en OTP, papeleta y comprobante final.
+- Está pensado para puestos compartidos, acompañamiento presencial o salas con observadores cercanos.
+
+### Lectura simplificada
+
+- Ajusta el tono de las instrucciones en intro, login, OTP, papeleta y confirmación.
+- Añade una capa visual global (`.portal-simplified-mode`) con mejor ritmo de lectura y menor fricción cognitiva.
+
+### Sello visual de sesión segura
+
+- La banda institucional superior muestra la marca **Sesion segura verificada**.
+- La papeleta y el comprobante final incorporan sellos de **Flujo verificado** para reforzar confianza visual.
 
 ### Soporte visible en UI
 
@@ -387,9 +424,9 @@ Gestionados en dos capas:
 | Campo | Allowlist | Atributos HTML |
 |---|---|---|
 | RUT — número | Solo dígitos `[0-9]`, máx 8 chars | `inputMode="numeric"`, `pattern="[0-9]*"` |
-| RUT — dígito verificador | Solo `[0-9kK]`, máx 1 char | `inputMode="text"` |
-| OTP | Solo dígitos `[0-9]`, máx 1 por caja | `inputMode="numeric"`, `pattern="[0-9]*"` |
-| Email | Nativo `type="email"` + `maxLength={254}` | `autoComplete="email"` |
+| RUT — dígito verificador | Solo `[0-9kK]`, máx 1 char | `inputMode="text"`, `autoCapitalize="characters"`, `autoCorrect="off"` |
+| OTP | Solo dígitos `[0-9]`, máx 1 por caja | `inputMode="numeric"`, `pattern="[0-9]*"`, `autoComplete="off"`, `spellCheck={false}` |
+| Email | Nativo `type="email"` + `maxLength={254}` | `autoComplete="off"`, `autoCapitalize="off"`, `autoCorrect="off"` |
 
 ### Headers de aislamiento
 
@@ -463,6 +500,7 @@ Gestionados en dos capas:
 | Fase 2d | Seguridad avanzada: rate limiting por IP, CSP report-uri, COOP/CORP headers, Permissions-Policy extendida, allowlist inputs, expiración por inactividad | ✅ Completado |
 | Fase 2e | Padrones por estamento: 3 usuarios ficticios, candidatos por padrón, OtpView con tarjeta de usuario, VotingView con badge de padrón, filtro dinámico de papeleta | ✅ Completado |
 | Fase 2f | Pulido UX frontend: IntroView, simulación guiada, contraste alto, soporte visible, guardas de sesión y advertencias multi-pestaña | ✅ Completado |
+| Fase 2g | Pulido de confianza y privacidad: privacy mode, lectura simplificada, autofill endurecido, sello visual de flujo y comprobante imprimible | ✅ Completado |
 | Fase 3 | Backend: autenticación real, envío de correo, base de datos | ⬜ Pendiente |
 | Fase 4 | Despliegue en producción (Vercel + BD serverless) | ⬜ Pendiente |
 

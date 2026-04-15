@@ -9,6 +9,7 @@ function renderLogin(overrides: Partial<React.ComponentProps<typeof LoginView>> 
     rutNumber: '',
     rutVerifier: '',
     email: '',
+    isSimplifiedMode: false,
     isSubmitting: false,
     isLocked: false,
     errorMessage: null,
@@ -72,5 +73,10 @@ describe('LoginView', () => {
     renderLogin();
     await userEvent.click(screen.getByRole('button', { name: /ayuda: identificacion/i }));
     expect(screen.getByText(/Usa tu RUT sin puntos/i)).toBeInTheDocument();
+  });
+
+  it('muestra copy simplificado cuando isSimplifiedMode es true', () => {
+    renderLogin({ isSimplifiedMode: true });
+    expect(screen.getByText(/Escribe tu RUT y tu correo institucional/i)).toBeInTheDocument();
   });
 });

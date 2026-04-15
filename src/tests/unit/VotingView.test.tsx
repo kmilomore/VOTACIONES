@@ -16,6 +16,8 @@ function renderVoting(overrides: Partial<React.ComponentProps<typeof VotingView>
     voterName: 'Test Votante',
     estamento: 'docentes',
     isDemoMode: false,
+    isPrivacyMode: false,
+    isSimplifiedMode: false,
     selectedCandidateId: null,
     remainingSeconds: 120,
     hasExpired: false,
@@ -96,5 +98,10 @@ describe('VotingView', () => {
     renderVoting();
     await userEvent.click(screen.getByRole('button', { name: /ayuda: papeleta/i }));
     expect(screen.getByText(/marca una sola candidatura/i)).toBeInTheDocument();
+  });
+
+  it('muestra sello de flujo verificado', () => {
+    renderVoting();
+    expect(screen.getByText(/flujo verificado/i)).toBeInTheDocument();
   });
 });

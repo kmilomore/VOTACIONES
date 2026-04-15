@@ -9,7 +9,9 @@ function renderSuccess(overrides: Partial<React.ComponentProps<typeof SuccessVie
     voterName: 'Test Votante',
     candidateName: 'Ana Pérez',
     receiptCode: 'SLEP-AP-A1B2C3D4',
+    receiptIssuedAt: '2025-01-15T10:30:00.000Z',
     isDemoMode: false,
+    isPrivacyMode: false,
     onRestart: vi.fn(),
     ...overrides,
   };
@@ -24,7 +26,7 @@ describe('SuccessView', () => {
 
   it('muestra el nombre del candidato elegido', () => {
     renderSuccess();
-    expect(screen.getByText('Ana Pérez')).toBeInTheDocument();
+    expect(screen.getAllByText('Ana Pérez')).toHaveLength(2);
   });
 
   it('muestra el código de comprobante', () => {
@@ -42,5 +44,10 @@ describe('SuccessView', () => {
   it('muestra el mensaje de simulacion cuando isDemoMode es true', () => {
     renderSuccess({ isDemoMode: true });
     expect(screen.getByText(/solo para capacitacion/i)).toBeInTheDocument();
+  });
+
+  it('muestra el botón para imprimir el comprobante', () => {
+    renderSuccess();
+    expect(screen.getByRole('button', { name: /imprimir comprobante/i })).toBeInTheDocument();
   });
 });

@@ -8,8 +8,12 @@ function renderIntro(overrides: Partial<React.ComponentProps<typeof IntroView>> 
   const props: React.ComponentProps<typeof IntroView> = {
     isDemoMode: false,
     isHighContrast: false,
+    isPrivacyMode: false,
+    isSimplifiedMode: false,
     onDemoModeChange: vi.fn(),
     onHighContrastChange: vi.fn(),
+    onPrivacyModeChange: vi.fn(),
+    onSimplifiedModeChange: vi.fn(),
     onStart: vi.fn(),
     ...overrides,
   };
@@ -29,6 +33,13 @@ describe('IntroView', () => {
     renderIntro({ onDemoModeChange });
     await userEvent.click(screen.getByLabelText(/activar simulacion guiada/i));
     expect(onDemoModeChange).toHaveBeenCalledWith(true);
+  });
+
+  it('permite activar privacy mode', async () => {
+    const onPrivacyModeChange = vi.fn();
+    renderIntro({ onPrivacyModeChange });
+    await userEvent.click(screen.getByLabelText(/ocultar datos visibles/i));
+    expect(onPrivacyModeChange).toHaveBeenCalledWith(true);
   });
 
   it('llama a onStart al iniciar el flujo', async () => {

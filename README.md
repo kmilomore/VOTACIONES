@@ -118,11 +118,11 @@ src/
 │   └── globals.css         # Variables CSS, animaciones, componentes utilitarios y modo contraste alto
 ├── components/
 │   └── views/
-│       ├── IntroView.tsx   # Pantalla inicial — orientación previa, simulación y contraste alto
-│       ├── LoginView.tsx   # Paso 1: RUT (validador módulo 11 en tiempo real) + email
-│       ├── OtpView.tsx     # Paso 2: OTP en 6 cajas separadas con auto-avance y pegado
-│       ├── VotingView.tsx  # Paso 3: papeleta + timer + CTA sticky + modal de confirmación
-│       └── SuccessView.tsx # Paso 4: check animado + código de comprobante + estado demo
+│       ├── IntroView.tsx   # Pantalla inicial — orientación, simulación, contraste, privacidad y lectura simplificada
+│       ├── LoginView.tsx   # Paso 1: RUT (validador módulo 11 en tiempo real) + email con autofill endurecido
+│       ├── OtpView.tsx     # Paso 2: OTP en 6 cajas separadas con auto-avance, pegado y privacidad reforzada
+│       ├── VotingView.tsx  # Paso 3: papeleta + timer + CTA sticky + modal + sello de flujo verificado
+│       └── SuccessView.tsx # Paso 4: check animado + comprobante imprimible + estado demo
 ├── lib/
 │   ├── api-client.ts       # Cliente HTTP interno consumido por la UI
 │   ├── mock-api.ts         # Simulación de backend para desarrollo local, usada solo en servidor
@@ -157,25 +157,28 @@ Cada transición se produce solo si la llamada a las rutas API del servidor resu
 
 | Funcionalidad | Descripción |
 |---|---|
-| IntroView | Pantalla previa con "qué necesitarás", soporte visible, simulación guiada y contraste alto |
+| IntroView | Pantalla previa con "qué necesitarás", soporte visible, simulación guiada, contraste alto, privacy mode y lectura simplificada |
 | Validador RUT en tiempo real | Algoritmo módulo 11 inline — ✓ verde si válido, ✗ rojo si no |
 | Formato RUT con puntos | `12345678` → `12.345.678-9` en el indicador (estado interno sin puntos) |
-| OTP 6 cajas | Auto-avance, backspace inteligente, flechas ← →, pegado distribuido |
+| OTP 6 cajas | Auto-avance, backspace inteligente, flechas ← →, pegado distribuido y autofill desactivado |
 | Tarjeta de usuario en OTP | Avatar con iniciales, nombre parcialmente anonimizado, organización y badge de estamento |
 | Modal de confirmación | Muestra candidatura antes de emitir — cancelable |
 | Transiciones entre pasos | Slide derecha al avanzar, slide izquierda al retroceder |
-| Skeleton loaders exactos | Placeholders con la geometría real de VotingView (timer, tarjetas, botón) |
+| Skeleton loaders exactos | Placeholders con la geometría real de VotingView, incluyendo badges superiores y CTA |
 | Barra de progreso | 3 pasos con checkmarks SVG animados y línea conectora |
 | Ayuda contextual por etapa | Franja breve con el paso actual y la siguiente acción esperada |
 | Timer con urgencia | Neutro → amber (≤30s) → rojo (≤10s) |
 | Aviso previo de expiración | Banner con countdown de 60 segundos antes del cierre por inactividad |
 | Spinners en botones | Feedback inmediato en cada acción asíncrona |
-| SuccessView | Check SVG animado + candidatura elegida + comprobante `SLEP-XX-XXXXXXXX` |
+| SuccessView | Check SVG animado + comprobante imprimible + fecha de emisión + sellos de confianza |
 | Escudo SVG institucional | Header de banda azul con tres capas y checkmark interno |
 | Padrones por estamento | Cada votante ve únicamente los candidatos de su padrón (directivos / docentes / asistentes) |
 | Badge de padrón | VotingView muestra el nombre del padrón activo con color propio |
 | Modo simulación guiada | Etiquetas visuales de demo para capacitación sin confundir el flujo con operación real |
 | Contraste alto institucional | Overrides visuales reforzados para mejorar legibilidad en jornadas presenciales |
+| Privacy mode | Reduce datos visibles en OTP, papeleta y comprobante para puestos compartidos |
+| Lectura simplificada | Reduce densidad verbal y ajusta ritmo de lectura en el flujo |
+| Sellos de confianza | La UI muestra "Sesión segura verificada" y "Flujo verificado" en puntos clave |
 | CTA sticky en papeleta | En móvil, el botón principal queda más accesible y reduce scroll innecesario |
 | Detección de múltiples pestañas | Advertencia visual para continuar en una sola pestaña del portal |
 | Soporte visible | Franja persistente recordando la mesa de ayuda o canal del establecimiento |
@@ -250,6 +253,8 @@ El detalle completo de responsabilidades, endpoints esperados, decisiones que ca
 - Si el navegador restaura la página desde caché, la UI reinicia el flujo para evitar datos visuales obsoletos.
 - Si se detecta otra pestaña activa, la interfaz avisa al usuario para continuar en una sola.
 - OTP y correo se muestran parcialmente enmascarados cuando aparecen como referencia visual.
+- Login, OTP y correo desactivan `autoComplete`, `autoCorrect` y `spellCheck` donde resulta riesgoso en puestos compartidos.
+- El comprobante final puede imprimirse con una hoja limpia orientada a verificación visual, no a auditoría electoral final.
 
 ### Sesion servidor
 

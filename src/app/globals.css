@@ -257,6 +257,34 @@
   transform: translateY(0) scale(1);
 }
 
+.portal-simplified-mode section,
+.portal-simplified-mode .modal-panel {
+  font-size: 1.03rem;
+}
+
+.portal-simplified-mode p,
+.portal-simplified-mode li,
+.portal-simplified-mode label,
+.portal-simplified-mode input,
+.portal-simplified-mode button,
+.portal-simplified-mode code {
+  letter-spacing: 0;
+  line-height: 1.72;
+}
+
+.receipt-card {
+  position: relative;
+}
+
+.receipt-card::after {
+  content: '';
+  position: absolute;
+  inset: 10px;
+  border: 1px dashed rgba(12, 33, 56, 0.12);
+  border-radius: 16px;
+  pointer-events: none;
+}
+
 .portal-contrast-high {
   --color-brand: #002b5c;
   --color-brand-mid: #001c3d;
@@ -412,6 +440,10 @@
   border-color: rgba(5, 7, 10, 0.28) !important;
 }
 
+.portal-contrast-high .receipt-card::after {
+  border-color: rgba(5, 7, 10, 0.24);
+}
+
 .portal-contrast-high [class*='ring-[#0b5294]/20'] {
   --tw-ring-color: rgba(0, 28, 61, 0.28) !important;
 }
@@ -484,5 +516,36 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+}
+
+@media print {
+  body {
+    background: white !important;
+  }
+
+  .portal-shell > div,
+  footer,
+  .screen-only,
+  .receipt-print-button {
+    display: none !important;
+  }
+
+  .portal-shell,
+  .portal-shell section,
+  .portal-shell div {
+    background: white !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+  }
+
+  .receipt-card,
+  .receipt-card * {
+    color: #111827 !important;
+  }
+
+  .receipt-card {
+    border-color: rgba(17, 24, 39, 0.35) !important;
+    break-inside: avoid;
   }
 }

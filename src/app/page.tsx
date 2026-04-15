@@ -129,8 +129,11 @@ export default function HomePage() {
   const [transitionDirection, setTransitionDirection] = useState<'forward' | 'back'>('forward');
   const [isDemoMode, setIsDemoMode] = useState(false);
   const [isHighContrast, setIsHighContrast] = useState(false);
+  const [isPrivacyMode, setIsPrivacyMode] = useState(false);
+  const [isSimplifiedMode, setIsSimplifiedMode] = useState(false);
   const [idleWarningSeconds, setIdleWarningSeconds] = useState<number | null>(null);
   const [showMultiTabWarning, setShowMultiTabWarning] = useState(false);
+  const [receiptIssuedAt, setReceiptIssuedAt] = useState<string>('');
 
   const appStateRef = useRef(appState);
   const idleResetRef = useRef<() => void>(() => undefined);
@@ -162,6 +165,7 @@ export default function HomePage() {
     setCandidates([]);
     setSelectedCandidateId(null);
     setReceiptCode('');
+    setReceiptIssuedAt('');
     setConfirmedCandidateName('');
     setRemainingSeconds(VOTING_WINDOW_SECONDS);
     setOtpAttempts(0);
@@ -437,6 +441,7 @@ export default function HomePage() {
     try {
       const result = await submitVote(selectedCandidateId);
       setReceiptCode(result.receiptCode);
+      setReceiptIssuedAt(new Date().toISOString());
       setConfirmedCandidateName(result.candidate.name);
       setTransitionDirection('forward');
       transitionTo('success');
@@ -472,7 +477,7 @@ export default function HomePage() {
   }
 
   return (
-    <main className={`portal-shell relative min-h-screen overflow-hidden isolate font-serif ${isHighContrast ? 'portal-contrast-high' : ''}`}>
+    <main className={`portal-shell relative min-h-screen overflow-hidden isolate font-serif ${isHighContrast ? 'portal-contrast-high' : ''} ${isSimplifiedMode ? 'portal-simplified-mode' : ''}`}>
       <div className="absolute inset-0 bg-portal" />
       <div className="absolute inset-0 bg-gradient-to-br from-[#062048]/85 via-[#082a54]/70 to-[#061836]/82" />
 
@@ -510,9 +515,17 @@ export default function HomePage() {
               <span className="inline-flex px-2.5 py-1 rounded-full text-[10px] font-bold font-sans uppercase tracking-wide border border-white/18 bg-white/10 text-white/92">
                 {isDemoMode ? 'Simulacion guiada' : 'Flujo institucional guiado'}
               </span>
+              <span className="inline-flex px-2.5 py-1 rounded-full text-[10px] font-bold font-sans uppercase tracking-wide border border-emerald-300/35 bg-emerald-400/10 text-white">
+                Sesion segura verificada
+              </span>
               <span className="inline-flex px-2.5 py-1 rounded-full text-[10px] font-bold font-sans uppercase tracking-wide border border-white/16 bg-white/8 text-white/78">
                 Una sola pestaña por votante
               </span>
+              {isPrivacyMode ? (
+                <span className="inline-flex px-2.5 py-1 rounded-full text-[10px] font-bold font-sans uppercase tracking-wide border border-white/16 bg-white/8 text-white/78">
+                  Datos visibles reducidos
+                </span>
+              ) : null}
             </div>
           </div>
 
@@ -587,8 +600,12 @@ export default function HomePage() {
               <IntroView
                 isDemoMode={isDemoMode}
                 isHighContrast={isHighContrast}
+                isPrivacyMode={isPrivacyMode}
+                isSimplifiedMode={isSimplifiedMode}
                 onDemoModeChange={setIsDemoMode}
                 onHighContrastChange={setIsHighContrast}
+                onPrivacyModeChange={setIsPrivacyMode}
+                onSimplifiedModeChange={setIsSimplifiedMode}
                 onStart={handleStartFlow}
               />
             ) : null}
@@ -598,6 +615,7 @@ export default function HomePage() {
                 rutNumber={rutNumber}
                 rutVerifier={rutVerifier}
                 email={email}
+                isSimplifiedMode={isSimplifiedMode}
                 isSubmitting={isSubmitting}
                 isLocked={isLoginLocked}
                 errorMessage={errorMessage}
@@ -613,6 +631,8 @@ export default function HomePage() {
                 email={email}
                 user={user}
                 otp={otp}
+                isPrivacyMode={isPrivacyMode}
+                isSimplifiedMode={isSimplifiedMode}
                 isSubmitting={isSubmitting}
                 isLocked={isOtpLocked}
                 errorMessage={errorMessage}
@@ -631,6 +651,10 @@ export default function HomePage() {
                         <div className="skeleton h-2.5 w-24 rounded-full" />
                         <div className="skeleton h-6 w-36 rounded-lg" />
                         <div className="skeleton h-4 w-52 rounded" />
+                        <div className="flex gap-2">
+                          <div className="skeleton h-5 w-28 rounded-full" />
+                          <div className="skeleton h-5 w-32 rounded-full" />
+                        </div>
                       </div>
                       <div className="skeleton shrink-0 w-[120px] h-[66px] rounded-2xl" />
                     </div>
@@ -656,6 +680,8 @@ export default function HomePage() {
                   voterName={user?.fullName ?? 'Participante'}
                   estamento={user?.estamento ?? 'docentes'}
                   isDemoMode={isDemoMode}
+                  isPrivacyMode={isPrivacyMode}
+                  isSimplifiedMode={isSimplifiedMode}
                   selectedCandidateId={selectedCandidateId}
                   remainingSeconds={remainingSeconds}
                   hasExpired={hasExpired}
@@ -675,7 +701,9 @@ export default function HomePage() {
                 voterName={user?.fullName ?? 'Participante'}
                 candidateName={confirmedCandidateName}
                 receiptCode={receiptCode}
+                receiptIssuedAt={receiptIssuedAt}
                 isDemoMode={isDemoMode}
+                isPrivacyMode={isPrivacyMode}
                 onRestart={handleRestart}
               />
             ) : null}
