@@ -6,14 +6,15 @@ import { VotingView } from '@/components/views/VotingView';
 import type { Candidate } from '@/types';
 
 const MOCK_CANDIDATES: Candidate[] = [
-  { id: 'c1', name: 'Ana Pérez', role: 'Representante docente', slogan: 'Slogan A', initials: 'AP', accentColor: '#c00' },
-  { id: 'c2', name: 'Luis Torres', role: 'Representante gestión', slogan: 'Slogan B', initials: 'LT', accentColor: '#00c' },
+  { id: 'c1', name: 'Ana Pérez', role: 'Representante docente', slogan: 'Slogan A', initials: 'AP', accentColor: '#c00', estamento: 'docentes' },
+  { id: 'c2', name: 'Luis Torres', role: 'Representante gestión', slogan: 'Slogan B', initials: 'LT', accentColor: '#00c', estamento: 'docentes' },
 ];
 
 function renderVoting(overrides: Partial<React.ComponentProps<typeof VotingView>> = {}) {
   const props: React.ComponentProps<typeof VotingView> = {
     candidates: MOCK_CANDIDATES,
     voterName: 'Test Votante',
+    estamento: 'docentes',
     selectedCandidateId: null,
     remainingSeconds: 120,
     hasExpired: false,
@@ -71,6 +72,7 @@ describe('VotingView', () => {
     const onSubmitVote = vi.fn();
     renderVoting({ selectedCandidateId: 'c1', onSubmitVote });
     await userEvent.click(screen.getByRole('button', { name: /confirmar/i }));
+    await userEvent.click(screen.getByRole('button', { name: /emitir voto/i }));
     expect(onSubmitVote).toHaveBeenCalledOnce();
   });
 

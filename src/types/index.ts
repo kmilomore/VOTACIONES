@@ -1,9 +1,6 @@
 export type Estamento = 'directivos' | 'docentes' | 'asistentes';
 
 export interface User {
-  rut: string;
-  email: string;
-  otp: string;
   fullName: string;
   organization: string;
   estamento: Estamento;

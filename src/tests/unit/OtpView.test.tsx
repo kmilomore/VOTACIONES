@@ -27,8 +27,9 @@ describe('OtpView', () => {
 
   it('renderiza el input de OTP con maxLength 6', () => {
     renderOtp();
-    const input = screen.getByPlaceholderText('123456');
-    expect(input).toHaveAttribute('maxLength', '6');
+    const inputs = screen.getAllByRole('textbox');
+    expect(inputs).toHaveLength(6);
+    inputs.forEach((input) => expect(input).toHaveAttribute('maxLength', '2'));
   });
 
   it('muestra los botones Volver y Acceder', () => {

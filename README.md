@@ -1,6 +1,8 @@
 # Portal de Votación — SLEP Santiago Centro
 
-Portal web institucional para la emisión de votos del Consejo Local del Servicio Local de Educación Pública (SLEP) Santiago Centro. Construido con **Next.js 15**, **React 19** y **TypeScript**.
+Portal web institucional para la emision de votos del Consejo Local del Servicio Local de Educacion Publica (SLEP) Santiago Centro. Construido con **Next.js 15**, **React 19** y **TypeScript**.
+
+Este repositorio esta pensado como un esqueleto compartible de frontend. La arquitectura visual, la experiencia de usuario y el contrato de integracion se reutilizan entre Servicios Locales, mientras que cada Servicio Local implementa, opera y audita su propio backend segun su padron, su infraestructura y sus controles internos.
 
 ---
 
@@ -12,7 +14,67 @@ npm run dev          # http://localhost:3000
 npm run build        # build de producción
 ```
 
-> **Credenciales de prueba:** viven únicamente en `src/lib/mock-api.ts`. No están en la UI ni en el bundle de producción.
+> **Mock de desarrollo:** las credenciales de prueba viven en `src/lib/mock-api.ts`, pero ahora se consumen desde rutas servidor de Next.js. El cliente ya no importa directamente usuarios, OTP ni reglas de padrón. Antes de un despliegue real, cada Servicio Local debe sustituir ese mock por su backend propio o por un adaptador conectado a su backend.
+
+---
+
+## Modelo de adopcion
+
+- Este proyecto entrega el frontend, la UX y el contrato de integracion.
+- Cada Servicio Local debe construir su propio backend de autenticacion, OTP, padron, emision de voto y auditoria.
+- El frontend debe integrarse manteniendo los endpoints y respuestas definidos en `BACKEND_CONTRACT.md`, o bien incorporando un adaptador compatible.
+- El mock actual existe solo para validacion funcional del frontend y no representa una implementacion electoral segura.
+
+## Guia de entrega a otros SLEP
+
+Este repositorio puede compartirse como maqueta institucional y base tecnica comun para otros Servicios Locales, siempre que se entregue con el alcance correcto.
+
+### Que si se entrega
+
+- Experiencia de usuario completa del flujo de votacion.
+- Arquitectura visual y componentes reutilizables.
+- BFF de referencia en Next.js para aislar la UI de la logica sensible.
+- Contrato de integracion para conectar un backend real.
+- Demo funcional local para validacion de flujo y presentaciones.
+
+### Que no se entrega como solucion final
+
+- Backend productivo.
+- Persistencia real de sesiones.
+- OTP real por correo, SMS o proveedor institucional.
+- Voto unico transaccional en base de datos.
+- Auditoria legal o trazabilidad operativa final.
+
+### Responsabilidad de cada Servicio Local
+
+- Implementar o conectar su backend real de autenticacion, OTP, padron y emision de voto.
+- Reemplazar `src/lib/mock-api.ts` por un adaptador servidor conectado a su infraestructura.
+- Sustituir `src/lib/server-session.ts` por Redis, KV o base de datos segun su arquitectura.
+- Definir sus controles de auditoria, despliegue, respaldo y cumplimiento.
+
+### Checklist minimo de adopcion
+
+1. Mantener la UI consumiendo las rutas internas de Next.js y no exponer logica sensible al cliente.
+2. Implementar `POST /api/auth/verify-credentials`, `POST /api/auth/verify-otp`, `GET /api/candidates`, `POST /api/votes` y `DELETE /api/session` con el contrato vigente.
+3. Reemplazar el store en memoria por una capa persistente y distribuida.
+4. Incorporar OTP real con expiracion, un solo uso y rate limiting server-side.
+5. Garantizar voto unico atomico por elector y auditoria de eventos sin exponer la preferencia en logs.
+6. Incorporar CSRF si se mantiene sesion con cookie httpOnly.
+
+### Mensaje recomendado de handoff
+
+"Este repositorio entrega una maqueta funcional y una arquitectura base de frontend para votacion digital. La UI, el flujo y el contrato de integracion estan listos para demo y adopcion tecnica. Cada Servicio Local debe implementar su backend real y sus controles de seguridad, auditoria y persistencia antes de cualquier uso productivo."
+
+## Arquitectura recomendada en Next.js
+
+Para que la logica sensible no quede expuesta en el cliente, este frontend debe operar con una capa servidor dentro de Next.js:
+
+- La UI React solo debe manejar estado visual, validaciones de experiencia y renderizado.
+- Las verificaciones de identidad, OTP, padron y emision de voto deben ejecutarse en Route Handlers o Server Actions.
+- El navegador no debe importar usuarios de prueba, OTP, reglas de elegibilidad ni consultas de voto.
+- Si se usa este repositorio como base comun, la forma mas estable es mantener un BFF en Next.js que reciba las llamadas del cliente y delegue al backend real del Servicio Local.
+
+En esta arquitectura, el cliente llama a `/api/auth/verify-credentials`, `/api/auth/verify-otp`, `/api/candidates`, `/api/votes` y `/api/session`, mientras que la implementacion real permanece del lado servidor.
 
 ---
 
@@ -49,7 +111,8 @@ src/
 ├── middleware.ts           # Rate limiting por IP + CSP nonce por request (Edge Runtime)
 ├── app/
 │   ├── layout.tsx          # Root layout — fuerza renderizado dinámico para inyección de nonce
-│   ├── page.tsx            # Orquestador — máquina de estados (login → otp → vote → success)
+│   ├── page.tsx            # Orquestador cliente — estado visual y navegación del flujo
+│   └── api/                # BFF interno de Next.js para auth, OTP, papeleta, voto y sesión
 │   └── globals.css         # Variables CSS, animaciones, componentes utilitarios
 ├── components/
 │   └── views/
@@ -58,7 +121,9 @@ src/
 │       ├── VotingView.tsx  # Paso 3: papeleta + timer + modal de confirmación
 │       └── SuccessView.tsx # Paso 4: check animado + código de comprobante
 ├── lib/
-│   └── mock-api.ts         # Simulación de backend con latencia aleatoria
+│   ├── api-client.ts       # Cliente HTTP interno consumido por la UI
+│   ├── mock-api.ts         # Simulación de backend para desarrollo local, usada solo en servidor
+│   └── server-session.ts   # Sesión httpOnly y estado temporal del flujo en servidor
 └── types/
     └── index.ts            # Interfaces: User, Candidate, AppState
 ```
@@ -73,7 +138,7 @@ login → otp → vote → success
   └──────────────┘  (reiniciar demo)
 ```
 
-Cada transición se produce solo si la llamada al mock-api resuelve sin error. El estado y la lógica de negocio viven exclusivamente en `page.tsx`.
+Cada transicion se produce solo si la llamada a las rutas API del servidor resuelve sin error. El cliente mantiene el estado visual del flujo y el servidor ejecuta la logica sensible.
 
 **Límites de intentos:**
 - Login: máximo 5 fallidos → formulario bloqueado
@@ -104,6 +169,22 @@ Cada transición se produce solo si la llamada al mock-api resuelve sin error. E
 
 ---
 
+## Flujo tecnico actual
+
+1. `page.tsx` recibe las acciones del usuario y llama a `src/lib/api-client.ts`.
+2. `api-client.ts` consume las rutas internas de Next.js bajo `src/app/api`.
+3. Los Route Handlers validan credenciales, OTP, sesion y elegibilidad del voto en el servidor.
+4. `server-session.ts` mantiene una sesion temporal por cookie httpOnly para la demo local.
+5. `mock-api.ts` actua como backend de desarrollo del lado servidor y puede reemplazarse por un backend real sin cambiar la UI.
+
+---
+
+## Alcance de seguridad
+
+Las medidas implementadas en este repositorio endurecen el frontend y su superficie web, pero no reemplazan los controles de integridad electoral que deben existir en backend. En particular, el frontend no puede garantizar por si solo autenticacion fuerte, OTP de un solo uso, voto unico ni auditoria transaccional.
+
+La mejora ya aplicada en esta base es que el navegador no recibe OTP, RUT ni email del votante autenticado como parte del modelo `User`. Esos datos quedan en servidor y el cliente solo recibe la informacion necesaria para renderizar la experiencia.
+
 ## Seguridad
 
 ### Headers HTTP
@@ -125,6 +206,13 @@ Cada transición se produce solo si la llamada al mock-api resuelve sin error. E
 - **Login:** 5 intentos fallidos → formulario bloqueado
 - **OTP:** 3 intentos fallidos → regreso forzado a login
 
+### Sesion servidor
+
+- **Cookie httpOnly:** `voting_session`
+- **Ambito:** autenticacion, OTP, consulta de papeleta y emision del voto
+- **Store actual:** memoria en `server-session.ts` solo para demo local
+- **Migracion recomendada:** Redis, KV o base de datos del Servicio Local para entornos reales
+
 ### Inputs
 
 - RUT número: allowlist `[0-9]` + `pattern="[0-9]*"` + `inputMode="numeric"`
@@ -142,8 +230,9 @@ Cada transición se produce solo si la llamada al mock-api resuelve sin error. E
 - **No llamar `getCandidates()` en el mount inicial** — solo tras OTP exitoso.
 - **No exponer credenciales en la UI** — ni hints, ni placeholders con valores reales.
 - **No guardar el RUT con puntos en el estado** — el formato con puntos es solo visual en el indicador.
-- **No pasar candidatos de un estamento a otro** — `getCandidates` recibe siempre `user.estamento`; no usar el array global.
-- **No reutilizar el mismo OTP para todos los usuarios** — `verifyOtpCode` recibe `user.otp` como segundo argumento; no comparar contra constante global.
+- **No consumir `mock-api.ts` desde componentes cliente** — toda llamada sensible debe pasar por `src/app/api`.
+- **No usar el store en memoria de `server-session.ts` en produccion** — reemplazarlo por infraestructura persistente o distribuida.
+- **No romper el contrato del BFF** — si un Servicio Local cambia la implementacion interna, debe mantener compatibles las respuestas del cliente.
 - **No declarar `idleTimer` como `ReturnType<typeof window.setTimeout>`** — en el build de Next.js `@types/node` interfiere; usar `let idleTimer: number` explícitamente.
 
 ---
@@ -159,7 +248,7 @@ Cada transición se produce solo si la llamada al mock-api resuelve sin error. E
 | Fase 2c | UX avanzado: validador RUT, OTP 6 cajas, modal confirmación, transiciones slide, fix CSP Vercel | ✅ |
 | Fase 2d | Seguridad avanzada: rate limiting IP, report-uri, COOP/CORP, Permissions-Policy extendida, allowlist inputs, expiración por inactividad | ✅ |
 | Fase 2e | Padrones por estamento: 3 usuarios ficticios, candidatos por padrón, OtpView con tarjeta de usuario, VotingView con badge de padrón, filtro dinámico de papeleta | ✅ |
-| Fase 3 | Backend: autenticación real, envío de correo, base de datos | ⬜ |
+| Fase 3 | Integracion real: backend del Servicio Local o adaptador BFF conectado a backend existente | ⬜ |
 | Fase 4 | Despliegue producción: Vercel + BD serverless | ⬜ |
 
 Ver [`context.md`](./context.md) para documentación técnica completa.

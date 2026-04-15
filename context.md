@@ -6,15 +6,18 @@ Portal web institucional para la emisión de votos del **Consejo Local del Servi
 
 ---
 
-## Fase actual: Frontend con mock data
+## Fase actual: Frontend robustecido con BFF en Next.js
 
-**Fase 1** de un desarrollo en etapas. El objetivo de esta fase es validar:
+El proyecto ya no expone la logica sensible directamente al cliente. La UI mantiene el flujo y la experiencia, mientras que Next.js aporta una capa servidor intermedia para autenticacion, OTP, padron y emision de voto.
+
+**Fase actual** de un desarrollo en etapas. El objetivo de esta fase es validar:
 - Flujo de usuario completo (UX) de extremo a extremo
 - Máquina de estados y transiciones
 - Diseño institucional y accesibilidad
 - Componentes aislados y reutilizables
+- Contrato estable entre cliente y capa servidor
 
-El backend real (base de datos, autenticación segura, envío de correo) se implementará en fases posteriores (Fase 3 / 4). Toda la lógica de negocio actual vive en `src/lib/mock-api.ts` y usa `Promesas + setTimeout` para simular latencia de red.
+El backend real (base de datos, autenticacion segura, envio de correo) sigue siendo responsabilidad de cada Servicio Local. Para desarrollo local, `src/lib/mock-api.ts` funciona como backend de prueba, pero ahora se ejecuta solo a traves de rutas servidor en `src/app/api/**`.
 
 ---
 
@@ -25,9 +28,9 @@ El backend real (base de datos, autenticación segura, envío de correo) se impl
 | Next.js | 15.x | Framework — App Router |
 | React | 19.x | UI — Client Components |
 | TypeScript | 5.x | Tipado estricto |
-| CSS puro | — | Estilos con variables custom |
+| Tailwind CSS | 4.x | Estilos + utilidades |
 
-Sin librerías de UI externas (no Tailwind, no MUI). Todo el sistema de diseño está definido en `src/app/globals.css`.
+Sin librerias de UI externas (no MUI, no shadcn). El sistema de diseño esta definido en `src/app/globals.css` y utilidades de Tailwind.
 
 ---
 
@@ -38,6 +41,7 @@ src/
 ├── app/
 │   ├── layout.tsx          # Root layout — metadatos, font, globals.css
 │   ├── page.tsx            # Orquestador principal (Client Component)
+│   └── api/                # Route Handlers — BFF interno del flujo
 │   └── globals.css         # Variables CSS, paleta institucional, componentes
 ├── components/
 │   └── views/              # Vistas aisladas, una por cada estado del flujo
@@ -46,7 +50,9 @@ src/
         ├── VotingView.tsx  # Paso 3: papeleta + temporizador 120s con alertas de urgencia
         └── SuccessView.tsx # Paso 4: confirmación animada + código de comprobante
 ├── lib/
-│   └── mock-api.ts         # Simulación de backend — usuarios, candidatos, OTP
+│   ├── api-client.ts       # Cliente HTTP consumido por la UI
+│   ├── mock-api.ts         # Simulación de backend para desarrollo local, usada en servidor
+│   └── server-session.ts   # Cookie httpOnly y sesión temporal del flujo
 └── types/
     └── index.ts            # Interfaces TypeScript: User, Candidate, AppState
 ```
@@ -73,7 +79,7 @@ src/middleware.ts   # CSP nonce-based por request; se ejecuta en el Edge Runtime
            └────────────────────┘  (reiniciar demo)
 ```
 
-El estado vive en `src/app/page.tsx` como `useState<AppState>('login')`. Cada transición se produce solo si la llamada a `mock-api` resuelve sin error.
+El estado vive en `src/app/page.tsx` como `useState<AppState>('login')`. Cada transicion se produce solo si la llamada a `src/lib/api-client.ts` y a las rutas servidor resuelve sin error.
 
 **Límites de intentos:**
 - Login: máximo 5 intentos fallidos → formulario bloqueado
@@ -89,9 +95,6 @@ El estado vive en `src/app/page.tsx` como `useState<AppState>('login')`. Cada tr
 type Estamento = 'directivos' | 'docentes' | 'asistentes';
 
 interface User {
-  rut: string;
-  email: string;
-  otp: string;
   fullName: string;
   organization: string;
   estamento: Estamento;       // padrón al que pertenece el votante
@@ -112,11 +115,32 @@ type AppState = 'login' | 'otp' | 'vote' | 'success';
 
 ---
 
-## Mock API (`src/lib/mock-api.ts`)
+## Capa servidor y Mock API
+
+### BFF interno (`src/app/api/**`)
+
+La aplicacion utiliza Route Handlers de Next.js como frontera servidor:
+
+| Ruta | Responsabilidad |
+|---|---|
+| `POST /api/auth/verify-credentials` | Valida RUT y correo e inicia sesion |
+| `POST /api/auth/verify-otp` | Verifica OTP sobre la sesion vigente |
+| `GET /api/candidates` | Devuelve la papeleta segun el padron asociado a la sesion |
+| `POST /api/votes` | Registra el voto y evita dobles emisiones en la demo local |
+| `DELETE /api/session` | Limpia la sesion al reiniciar o volver al login |
+
+### Sesion servidor (`src/lib/server-session.ts`)
+
+- Usa cookie httpOnly `voting_session`.
+- Mantiene estado temporal de autenticacion y OTP validado.
+- Implementa una proteccion basica de voto unico para la demo.
+- Usa memoria de proceso, por lo que no debe considerarse lista para produccion.
+
+### Mock API (`src/lib/mock-api.ts`)
 
 ### Credenciales de prueba por estamento
 
-> No se muestran en pantalla ni se exportan. Consultar `VALID_USERS` en `src/lib/mock-api.ts` solo en desarrollo.
+> No se muestran en pantalla ni se exponen al cliente. Consultar `VALID_USERS` en `src/lib/mock-api.ts` solo en desarrollo del lado servidor.
 
 | Estamento | RUT | Email | OTP |
 |---|---|---|---|
@@ -128,10 +152,11 @@ type AppState = 'login' | 'otp' | 'vote' | 'success';
 
 | Función | Signatura | Descripción |
 |---|---|---|
-| `verifyUserCredentials` | `(rut, email) → Promise<User>` | Busca en `VALID_USERS` por RUT + email normalizados. Incluye el `estamento` en el objeto retornado. |
+| `verifyUserCredentials` | `(rut, email) → Promise<MockUserRecord>` | Busca en `VALID_USERS` por RUT + email normalizados. |
 | `verifyOtpCode` | `(otp, expectedOtp) → Promise<void>` | Valida el OTP contra el del usuario autenticado (pasado como segundo argumento). |
 | `getCandidates` | `(estamento) → Promise<Candidate[]>` | Filtra candidatos por `estamento`. Solo se llama tras OTP exitoso. Simula 500ms de latencia. |
 | `submitVote` | `(candidateId) → Promise<{receiptCode, candidate}>` | Registra el voto. `receiptCode` = `SLEP-{iniciales}-{UUID parcial}`. |
+| `toPublicUser` | `(user) → User` | Devuelve solo el modelo publico que la UI puede renderizar. |
 
 Todas las funciones simulan latencia aleatoria entre 700ms y 1400ms usando `setTimeout`.
 
@@ -205,10 +230,10 @@ Todas las funciones simulan latencia aleatoria entre 700ms y 1400ms usando `setT
 Cada usuario pertenece a un padrón (`estamento`). La papeleta que ve el votante contiene **únicamente los candidatos de su propio padrón**.
 
 **Flujo de datos:**
-1. `verifyUserCredentials` devuelve `User` con `estamento` incluido.
-2. `page.tsx` almacena el `user` completo en estado.
-3. `verifyOtpCode(otp, user.otp)` valida el OTP del usuario específico.
-4. `getCandidates(user.estamento)` filtra y devuelve solo los candidatos del padrón.
+1. `page.tsx` envia RUT y correo al BFF interno mediante `api-client.ts`.
+2. `POST /api/auth/verify-credentials` valida la identidad y crea una sesion httpOnly.
+3. `POST /api/auth/verify-otp` valida el OTP del usuario autenticado en servidor.
+4. `GET /api/candidates` obtiene el padron desde la sesion y devuelve solo los candidatos habilitados.
 5. `VotingView` recibe `estamento` y muestra el badge "Padrón: Docentes / Directivos / Asistentes".
 
 **Colores por estamento:**
@@ -353,7 +378,9 @@ Gestionados en dos capas:
 
 ### Integridad del estado
 
-- `getCandidates()` solo se invoca tras verificación OTP exitosa (no en mount inicial).
+- `getCandidates()` solo se invoca tras verificacion OTP exitosa (no en mount inicial).
+- El cliente consume `api-client.ts`; no importa el mock directamente.
+- El modelo `User` expuesto al cliente no contiene RUT, email ni OTP.
 - Al retroceder desde OTP, se limpian `otp`, `user` y ambos contadores.
 - `handleRestart()` limpia todos los campos — sin pre-relleno de credenciales de prueba.
 - `receiptCode` usa `crypto.randomUUID()` — no timestamp predecible.
@@ -369,8 +396,9 @@ Gestionados en dos capas:
 - **No llamar `getCandidates()` en el mont inicial** — solo debe llamarse tras OTP exitoso.
 - **No bypassear el rate limiter** deshabilitando el middleware en rutas sensibles.
 - **No guardar el RUT con puntos en el estado** — el formato con puntos es solo para visualización en el indicador.
-- **No pasar candidatos de un estamento a la vista de otro** — `getCandidates` recibe siempre `user.estamento`; nunca usar la lista global `candidates` directamente en la UI.
-- **No reutilizar el mismo OTP para todos los usuarios** — `verifyOtpCode` recibe `user.otp` como segundo argumento; nunca comparar contra una constante global.
+- **No pasar candidatos de un estamento a la vista de otro** — el servidor debe resolver siempre el padron desde la sesion autenticada.
+- **No consumir `mock-api.ts` desde componentes cliente** — la llamada debe pasar por el BFF interno.
+- **No usar `server-session.ts` en produccion tal como esta** — migrar a Redis, KV o base de datos compartida.
 
 ---
 

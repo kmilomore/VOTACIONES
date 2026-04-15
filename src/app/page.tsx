@@ -8,10 +8,11 @@ import { SuccessView } from '@/components/views/SuccessView';
 import { VotingView } from '@/components/views/VotingView';
 import {
   getCandidates,
+  resetSession,
   submitVote,
   verifyOtpCode,
   verifyUserCredentials,
-} from '@/lib/mock-api';
+} from '@/lib/api-client';
 import type { AppState, Candidate, User } from '@/types';
 
 const VOTING_WINDOW_SECONDS = 120;
@@ -39,6 +40,19 @@ export default function HomePage() {
   const [isLoadingCandidates, setIsLoadingCandidates] = useState(false);
   const [transitionDirection, setTransitionDirection] = useState<'forward' | 'back'>('forward');
 
+  function clearLocalSessionState() {
+    setAppState('login');
+    setOtp('');
+    setUser(null);
+    setCandidates([]);
+    setSelectedCandidateId(null);
+    setReceiptCode('');
+    setConfirmedCandidateName('');
+    setRemainingSeconds(VOTING_WINDOW_SECONDS);
+    setLoginAttempts(0);
+    setOtpAttempts(0);
+  }
+
   // Idle session expiry (#29) — reset to login after IDLE_TIMEOUT_MS of inactivity
   // Only active during 'otp' and 'vote' states.
   useEffect(() => {
@@ -50,11 +64,8 @@ export default function HomePage() {
       window.clearTimeout(idleTimer);
       idleTimer = window.setTimeout(() => {
         setTransitionDirection('back');
-        setAppState('login');
-        setOtp('');
-        setUser(null);
-        setLoginAttempts(0);
-        setOtpAttempts(0);
+        clearLocalSessionState();
+        void resetSession();
         setErrorMessage('La sesion expiro por inactividad. Por favor, vuelve a identificarte.');
       }, IDLE_TIMEOUT_MS);
     }
@@ -121,16 +132,13 @@ export default function HomePage() {
 
     // Step 1: verify OTP code
     try {
-      await verifyOtpCode(otp, user?.otp ?? '');
+      await verifyOtpCode(otp);
     } catch (error) {
       const nextAttempts = otpAttempts + 1;
       if (nextAttempts >= MAX_OTP_ATTEMPTS) {
         // Force back to login after too many failed OTP attempts
-        setOtp('');
-        setUser(null);
-        setOtpAttempts(0);
-        setLoginAttempts(0);
-        setAppState('login');
+        clearLocalSessionState();
+        void resetSession();
         setErrorMessage('Demasiados intentos fallidos de OTP. Reinicia el proceso de autenticacion.');
       } else {
         setOtpAttempts(nextAttempts);
@@ -144,7 +152,7 @@ export default function HomePage() {
     setOtp('');
     setIsLoadingCandidates(true);
     try {
-      const availableCandidates = await getCandidates(user!.estamento);
+      const availableCandidates = await getCandidates();
       setCandidates(availableCandidates);
       setRemainingSeconds(VOTING_WINDOW_SECONDS);
       setSelectedCandidateId(null);
@@ -187,29 +195,18 @@ export default function HomePage() {
 
   function handleRestart() {
     setTransitionDirection('back');
-    setAppState('login');
     setRutNumber('');
     setRutVerifier('');
     setEmail('');
-    setOtp('');
-    setUser(null);
-    setCandidates([]);
-    setSelectedCandidateId(null);
-    setReceiptCode('');
-    setConfirmedCandidateName('');
-    setRemainingSeconds(VOTING_WINDOW_SECONDS);
+    clearLocalSessionState();
+    void resetSession();
     setErrorMessage(null);
-    setLoginAttempts(0);
-    setOtpAttempts(0);
   }
 
   function handleBackToLogin() {
     setTransitionDirection('back');
-    setAppState('login');
-    setOtp('');
-    setUser(null);
-    setLoginAttempts(0);
-    setOtpAttempts(0);
+    clearLocalSessionState();
+    void resetSession();
     setErrorMessage(null);
   }
 
@@ -372,6 +369,12 @@ export default function HomePage() {
             ) : null}
           </div>
         </div>
+
+        <footer className="mt-4 px-4 text-center">
+          <p className="m-0 text-[11px] font-sans font-medium uppercase tracking-[0.12em] text-white/78">
+            Desarrollado por Servicio Local de Educacion Publica Colchagua - Subdireccion de Gestion Territorial
+          </p>
+        </footer>
       </section>
     </main>
   );

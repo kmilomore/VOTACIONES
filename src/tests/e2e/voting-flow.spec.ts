@@ -2,9 +2,16 @@ import { expect, test } from '@playwright/test';
 
 // Credentials that live in VALID_USER (mock-api.ts)
 const VALID_RUT_NUMBER = '12345678';
-const VALID_RUT_VERIFIER = '9';
-const VALID_EMAIL = 'usuario@slep.cl';
-const VALID_OTP = '123456';
+const VALID_RUT_VERIFIER = '5';
+const VALID_EMAIL = 'director@slep.cl';
+const VALID_OTP = '111111';
+
+async function fillOtp(page: Parameters<typeof test>[0]['page'], otp: string) {
+  const digits = otp.split('');
+  for (let i = 0; i < digits.length; i += 1) {
+    await page.getByLabel(`Dígito ${i + 1} de 6`).fill(digits[i]);
+  }
+}
 
 test.describe('Flujo completo de votación', () => {
   test('completa el flujo login → otp → vote → success', async ({ page }) => {
@@ -19,18 +26,19 @@ test.describe('Flujo completo de votación', () => {
 
     // --- Paso 2: OTP ---
     await expect(page.getByText(/Paso 2 de 3/i)).toBeVisible();
-    await page.getByPlaceholder('123456').fill(VALID_OTP);
+    await fillOtp(page, VALID_OTP);
     await page.getByRole('button', { name: /acceder/i }).click();
 
     // --- Paso 3: Papeleta ---
     await expect(page.getByText(/Emision de voto/i)).toBeVisible();
     // Seleccionar el primer candidato disponible
-    const candidateButtons = page.getByRole('button', { name: /Marisol|Vianka|Ximena|Jorge/i });
+    const candidateButtons = page.getByRole('button', { name: /Pablo|Claudia|Rodrigo/i });
     await candidateButtons.first().click();
     await page.getByRole('button', { name: /confirmar voto/i }).click();
+    await page.getByRole('button', { name: /emitir voto/i }).click();
 
     // --- Paso 4: Confirmación ---
-    await expect(page.getByText(/Gracias por participar/i)).toBeVisible();
+    await expect(page.getByText(/Voto registrado/i)).toBeVisible();
     await expect(page.getByText(/SLEP-/i)).toBeVisible();
   });
 });
@@ -69,7 +77,7 @@ test.describe('OTP — validación', () => {
   });
 
   test('muestra error con OTP incorrecto', async ({ page }) => {
-    await page.getByPlaceholder('123456').fill('000000');
+    await fillOtp(page, '000000');
     await page.getByRole('button', { name: /acceder/i }).click();
     await expect(page.getByText(/OTP no es valido/i)).toBeVisible();
   });
@@ -81,7 +89,7 @@ test.describe('OTP — validación', () => {
 
   test('regresa a login forzado tras 3 intentos fallidos de OTP', async ({ page }) => {
     for (let i = 0; i < 3; i++) {
-      await page.getByPlaceholder('123456').fill('000000');
+      await fillOtp(page, '000000');
       await page.getByRole('button', { name: /acceder/i }).click();
       await page.waitForTimeout(1600);
     }

@@ -1,5 +1,11 @@
 import type { Candidate, Estamento, User } from '@/types';
 
+interface MockUserRecord extends User {
+  rut: string;
+  email: string;
+  otp: string;
+}
+
 // ---------------------------------------------------------------------------
 // Usuarios ficticios de prueba — uno por estamento
 // ---------------------------------------------------------------------------
@@ -7,7 +13,7 @@ import type { Candidate, Estamento, User } from '@/types';
 // RUT 16940271-k → Docentes
 // RUT 19876543-0 → Asistentes de la Educación
 // ---------------------------------------------------------------------------
-const VALID_USERS: User[] = [
+const VALID_USERS: MockUserRecord[] = [
   {
     rut: '12345678-5',
     email: 'director@slep.cl',
@@ -151,7 +157,25 @@ function normalizeEmail(email: string) {
   return email.trim().toLowerCase();
 }
 
-export async function verifyUserCredentials(rut: string, email: string): Promise<User> {
+export function toPublicUser(user: MockUserRecord): User {
+  return {
+    fullName: user.fullName,
+    organization: user.organization,
+    estamento: user.estamento,
+  };
+}
+
+export function getMockUserByRut(rut: string): MockUserRecord | null {
+  const normalizedRut = normalizeRut(rut);
+
+  return VALID_USERS.find((user) => normalizeRut(user.rut) === normalizedRut) ?? null;
+}
+
+export function getCandidateById(candidateId: string): Candidate | null {
+  return candidates.find((candidate) => candidate.id === candidateId) ?? null;
+}
+
+export async function verifyUserCredentials(rut: string, email: string): Promise<MockUserRecord> {
   await wait(randomDelay());
 
   const normalizedRut = normalizeRut(rut);
@@ -184,7 +208,7 @@ export async function getCandidates(estamento: Estamento): Promise<Candidate[]> 
 export async function submitVote(candidateId: string): Promise<{ receiptCode: string; candidate: Candidate }> {
   await wait(randomDelay());
 
-  const candidate = candidates.find((item) => item.id === candidateId);
+  const candidate = getCandidateById(candidateId);
 
   if (!candidate) {
     throw new Error('No fue posible registrar el voto para la candidatura seleccionada.');

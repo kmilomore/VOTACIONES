@@ -4,13 +4,13 @@ import { submitVote, verifyOtpCode, verifyUserCredentials } from '@/lib/mock-api
 
 describe('mock-api — verifyUserCredentials', () => {
   it('resuelve con el usuario cuando RUT y email son correctos', async () => {
-    const user = await verifyUserCredentials('12345678-9', 'usuario@slep.cl');
+    const user = await verifyUserCredentials('12345678-5', 'director@slep.cl');
     expect(user.fullName).toBeTruthy();
     expect(user.organization).toBeTruthy();
   });
 
   it('normaliza puntos y mayúsculas en el RUT', async () => {
-    const user = await verifyUserCredentials('12.345.678-9', 'USUARIO@SLEP.CL');
+    const user = await verifyUserCredentials('12.345.678-5', 'DIRECTOR@SLEP.CL');
     expect(user).toBeDefined();
   });
 
@@ -21,11 +21,11 @@ describe('mock-api — verifyUserCredentials', () => {
 
 describe('mock-api — verifyOtpCode', () => {
   it('resuelve con el OTP correcto', async () => {
-    await expect(verifyOtpCode('123456')).resolves.toBeDefined();
+    await expect(verifyOtpCode('111111', '111111')).resolves.toBeUndefined();
   });
 
   it('lanza error con OTP incorrecto', async () => {
-    await expect(verifyOtpCode('000000')).rejects.toThrow();
+    await expect(verifyOtpCode('000000', '111111')).rejects.toThrow();
   });
 });
 

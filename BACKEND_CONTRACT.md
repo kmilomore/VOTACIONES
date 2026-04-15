@@ -1,6 +1,10 @@
-# Contrato de integración backend ↔ frontend
+# Contrato de integracion backend ↔ frontend
 
-Documento para el equipo de backend. Describe los endpoints que el frontend espera, el flujo de autenticación, los requisitos de seguridad y los ítems que el equipo frontend debe eliminar antes de pasar a producción.
+Documento para el equipo de backend. Describe los endpoints que el frontend espera, el flujo de autenticacion, los requisitos de seguridad y los items que el equipo frontend debe eliminar antes de pasar a produccion.
+
+Este frontend se distribuye como esqueleto reutilizable para distintos Servicios Locales. El backend no forma parte de este repositorio: cada Servicio Local es responsable de implementar, desplegar y operar su propia capa de autenticacion, OTP, padron, emision de voto, persistencia y auditoria.
+
+La expectativa de este documento es simple: cualquier equipo local puede conservar la experiencia de usuario del frontend siempre que su backend cumpla este contrato o entregue un adaptador equivalente.
 
 ---
 
@@ -8,9 +12,10 @@ Documento para el equipo de backend. Describe los endpoints que el frontend espe
 
 ```
 [1] POST /api/auth/verify-credentials  → valida RUT + email, inicia sesión, dispara envío de OTP
-[2] POST /api/auth/verify-otp          → valida OTP, devuelve token de votación
-[3] GET  /api/candidates               → lista de candidatos (requiere token)
-[4] POST /api/votes                    → emite el voto (requiere token)
+[2] POST /api/auth/verify-otp          → valida OTP sobre la sesión iniciada
+[3] GET  /api/candidates               → lista de candidatos (requiere sesión válida)
+[4] POST /api/votes                    → emite el voto (requiere sesión válida)
+[5] DELETE /api/session                → destruye la sesión local del flujo
 ```
 
 ---
@@ -48,7 +53,7 @@ Documento para el equipo de backend. Describe los endpoints que el frontend espe
 
 ### 2. `POST /api/auth/verify-otp`
 
-> El frontend **no envía** el OTP junto con credenciales — es un paso separado. El backend debe asociar el OTP a la sesión iniciada en el paso anterior.
+> El frontend **no envia** el OTP junto con credenciales. Es un paso separado y el backend debe asociarlo a la sesion iniciada en el paso anterior.
 
 **Cuerpo de la solicitud:**
 ```json
@@ -57,7 +62,7 @@ Documento para el equipo de backend. Describe los endpoints que el frontend espe
 
 **Respuesta exitosa `200`:**
 ```json
-{ "voteToken": "<JWT u opaque token de un solo uso>" }
+{ "ok": true }
 ```
 
 **Respuesta de error `401`:**
@@ -71,10 +76,9 @@ Documento para el equipo de backend. Describe los endpoints que el frontend espe
 
 ### 3. `GET /api/candidates`
 
-**Cabeceras requeridas:**
-```
-Authorization: Bearer <voteToken>
-```
+**Mecanismo requerido:**
+
+Sesion valida ya asociada al votante autenticado. En este esqueleto, la referencia es una cookie httpOnly. Si un Servicio Local usa otro mecanismo, debe mantener el mismo comportamiento funcional para el frontend.
 
 **Respuesta exitosa `200`:**
 ```json
@@ -94,10 +98,9 @@ Authorization: Bearer <voteToken>
 
 ### 4. `POST /api/votes`
 
-**Cabeceras requeridas:**
-```
-Authorization: Bearer <voteToken>
-```
+**Mecanismo requerido:**
+
+Sesion valida ya asociada al votante autenticado.
 
 **Cuerpo de la solicitud:**
 ```json
@@ -121,16 +124,40 @@ Authorization: Bearer <voteToken>
 
 ---
 
-## Gestión de sesión / token
+### 5. `DELETE /api/session`
 
-El frontend actualmente no gestiona tokens (fase mock). Al integrar el backend, elegir **una** de las siguientes estrategias y coordinar con el frontend:
+**Objetivo:**
+
+- Cerrar el flujo al volver al login.
+- Limpiar la sesion cuando el usuario reinicia la demo.
+- Invalidar la sesion por inactividad o salida manual.
+
+**Respuesta exitosa `204`:**
+
+Sin cuerpo.
+
+---
+
+## Gestion de sesion / token
+
+El frontend actualmente opera mejor con una sesion servidor administrada por el BFF de Next.js. Al integrar el backend, cada Servicio Local puede elegir una estrategia interna, pero hacia el frontend debe conservar una experiencia equivalente:
 
 | Estrategia | Ventaja | Consideración |
 |---|---|---|
-| **Cookie httpOnly** (recomendado) | El token nunca es accesible por JS; protección XSS automática | Requiere `SameSite=Strict` o `Lax` + CSRF token para mutaciones |
-| **JWT en memoria React** | Simple de implementar en el frontend | Desaparece al refrescar la página; no persiste |
+| **Cookie httpOnly** (recomendado) | El token nunca es accesible por JS; proteccion XSS automatica | Requiere `SameSite=Strict` o `Lax` + CSRF token para mutaciones |
+| **Sesion opaca en BFF** | El cliente nunca ve el token del backend real | Requiere mantener un adaptador servidor en Next.js |
+| **JWT en memoria React** | Posible, pero menos robusto para este esqueleto | Expone mas logica al cliente y complica el refresco de pagina |
 
-> Si se usa cookie httpOnly, el endpoint `POST /api/votes` debe incluir protección CSRF (cabecera custom o token doble-submit).
+> Si se usa cookie httpOnly, el endpoint `POST /api/votes` debe incluir proteccion CSRF (cabecera custom o token doble-submit).
+
+---
+
+## Responsabilidad por Servicio Local
+
+- Este repositorio entrega la arquitectura del frontend y el contrato de integracion.
+- Cada Servicio Local define su modelo de datos, proveedor de correo o mensajeria OTP, trazabilidad, despliegue y cumplimiento normativo.
+- Las reglas de padron, elegibilidad, cierre de mesa, auditoria y resguardo de evidencia deben implementarse del lado servidor.
+- Si un Servicio Local necesita variaciones de infraestructura, debe mantener compatibilidad funcional con este contrato para no romper el frontend compartido.
 
 ---
 
@@ -142,6 +169,7 @@ El frontend actualmente no gestiona tokens (fase mock). Al integrar el backend, 
 | **OTP** | Expiración: máximo 10 minutos. Un solo uso (invalidar tras verificación exitosa). Generación criptográficamente segura (`crypto.randomInt` o equivalente). |
 | **Voto único** | Verificar en BD que el `userId` no ha votado antes de registrar. La verificación debe ser atómica (transacción). |
 | **Logging de auditoría** | Registrar IP, timestamp y `userId` de cada evento: login intentado, OTP enviado, voto emitido. Sin registrar el valor del voto (secreto). |
+| **Sesion** | La sesion debe quedar asociada al votante autenticado y no depender de datos enviados por el cliente para inferir el padron. |
 | **HTTPS** | Obligatorio en producción. El frontend ya envía `Strict-Transport-Security: max-age=31536000; includeSubDomains; preload`. |
 | **CORS** | Configurar el origen exacto del frontend. No usar `*`. |
 | **Códigos de comprobante** | Generar `receiptCode` con UUID v4 o similar. El mock ya usa `crypto.randomUUID()` como referencia. |
@@ -157,28 +185,31 @@ Los ítems ya completados en Fase 1b están marcados. Los restantes requieren in
 |---|---|---|
 | `src/app/page.tsx` | `handleRestart` limpia campos en blanco (sin pre-relleno) | ✅ Hecho |
 | `src/app/page.tsx` | Barra de progreso de 3 pasos reemplaza los step-chips por vista | ✅ Hecho |
+| `src/app/page.tsx` | El cliente consume `src/lib/api-client.ts` en lugar de importar `mock-api.ts` | ✅ Hecho |
 | `src/app/page.tsx` | Actualizar texto del banner a copy real (sin "datos simulados") | ⏳ Pendiente (Fase 3) |
 | `src/components/views/LoginView.tsx` | Chip de hint eliminado | ✅ Hecho |
 | `src/components/views/OtpView.tsx` | Chip de hint eliminado | ✅ Hecho |
 | `src/components/views/VotingView.tsx` | Mostrar `role` y `slogan` del candidato en cada tarjeta | ✅ Hecho |
-| `src/lib/mock-api.ts` | **Eliminar** todo el archivo. Reemplazar con llamadas `fetch` reales | ⏳ Pendiente (Fase 3) |
-| `src/types/index.ts` | Mantener interfaces; ajustar si el backend devuelve campos adicionales | ⏳ Pendiente (Fase 3) |
+| `src/app/api/**` | Mantener el BFF de Next.js como capa estable frente al backend del Servicio Local | ✅ Hecho |
+| `src/lib/mock-api.ts` | Reemplazar el mock local por adaptador o backend real | ⏳ Pendiente (Fase 3) |
+| `src/lib/server-session.ts` | Sustituir store en memoria por infraestructura real | ⏳ Pendiente (Fase 3) |
+| `src/types/index.ts` | Mantener en cliente solo el modelo publico del votante | ✅ Hecho |
 | `next.config.mjs` | CSP movida al middleware con nonce | ✅ Hecho |
 | `next.config.mjs` | HSTS agregado | ✅ Hecho |
 
 ---
 
-## Sustitución del mock en `page.tsx`
+## Sustitucion del mock en la capa servidor
 
-Al conectar el backend, reemplazar cada importación de `mock-api.ts` por un `fetch`:
+Al conectar el backend real, reemplazar el uso de `mock-api.ts` dentro de `src/app/api/**` o dentro de un adaptador servidor. El cliente no deberia cambiar.
 
 ```typescript
-// ANTES (mock)
+// ANTES (mock del lado servidor)
 import { verifyUserCredentials } from '@/lib/mock-api';
 const user = await verifyUserCredentials(rut, email);
 
-// DESPUÉS (backend real)
-const response = await fetch('/api/auth/verify-credentials', {
+// DESPUES (adaptador servidor conectado al backend real)
+const response = await fetch('https://backend-local.example/api/auth/verify-credentials', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({ rut, email }),
@@ -190,7 +221,7 @@ if (!response.ok) {
 const { user } = await response.json();
 ```
 
-El patrón es idéntico para `verifyOtpCode`, `getCandidates` y `submitVote` — solo cambia el endpoint y el cuerpo de la solicitud.
+El patron es identico para `verifyOtpCode`, `getCandidates` y `submitVote`. La UI puede seguir consumiendo las mismas rutas internas de Next.js.
 
 ---
 
@@ -200,11 +231,9 @@ El patrón es idéntico para `verifyOtpCode`, `getCandidates` y `submitVote` —
 // src/types/index.ts — compartir con backend para alinear contratos
 
 interface User {
-  rut: string;          // solo se usa para autenticación, no se devuelve post-login
-  email: string;        // solo para autenticación
-  otp: string;          // solo para autenticación
   fullName: string;     // se muestra en la papeleta
   organization: string; // se muestra en la vista de éxito
+  estamento: Estamento; // define el padron visible en la UI
 }
 
 interface Candidate {
@@ -214,6 +243,7 @@ interface Candidate {
   slogan: string;
   initials: string;     // 2 caracteres, para el badge visual
   accentColor: string;  // hex, para el acento visual de la tarjeta
+  estamento: Estamento;
 }
 
 type AppState = 'login' | 'otp' | 'vote' | 'success';
