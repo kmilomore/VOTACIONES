@@ -117,8 +117,10 @@ src/
 │   └── api/                # BFF interno de Next.js para auth, OTP, papeleta, voto y sesión
 │   └── globals.css         # Variables CSS, animaciones, componentes utilitarios y modo contraste alto
 ├── components/
+│   ├── AccessibilityPanel.tsx # Botón flotante de accesibilidad + panel compacto por iconos
+│   ├── HelpTooltip.tsx     # Tooltip reutilizable para ayuda contextual y sellos explicables
 │   └── views/
-│       ├── IntroView.tsx   # Pantalla inicial — orientación, simulación, contraste, privacidad y lectura simplificada
+│       ├── IntroView.tsx   # Pantalla inicial — orientación, simulación y acceso a ajustes desde el botón flotante
 │       ├── LoginView.tsx   # Paso 1: RUT (validador módulo 11 en tiempo real) + email con autofill endurecido
 │       ├── OtpView.tsx     # Paso 2: OTP en 6 cajas separadas con auto-avance, pegado y privacidad reforzada
 │       ├── VotingView.tsx  # Paso 3: papeleta + timer + CTA sticky + modal + sello de flujo verificado
@@ -157,7 +159,7 @@ Cada transición se produce solo si la llamada a las rutas API del servidor resu
 
 | Funcionalidad | Descripción |
 |---|---|
-| IntroView | Pantalla previa con "qué necesitarás", soporte visible, simulación guiada, contraste alto, privacy mode y lectura simplificada |
+| IntroView | Pantalla previa con "qué necesitarás", soporte visible, simulación guiada y referencia al botón flotante de accesibilidad |
 | Validador RUT en tiempo real | Algoritmo módulo 11 inline — ✓ verde si válido, ✗ rojo si no |
 | Formato RUT con puntos | `12345678` → `12.345.678-9` en el indicador (estado interno sin puntos) |
 | OTP 6 cajas | Auto-avance, backspace inteligente, flechas ← →, pegado distribuido y autofill desactivado |
@@ -178,10 +180,13 @@ Cada transición se produce solo si la llamada a las rutas API del servidor resu
 | Contraste alto institucional | Overrides visuales reforzados para mejorar legibilidad en jornadas presenciales |
 | Privacy mode | Reduce datos visibles en OTP, papeleta y comprobante para puestos compartidos |
 | Lectura simplificada | Reduce densidad verbal y ajusta ritmo de lectura en el flujo |
+| Accesibilidad flotante | Botón discreto abajo a la derecha con panel compacto por iconos para contraste, lectura simplificada, privacidad, movimiento reducido y tamaño de texto |
+| Tooltip explicable de seguridad | El sello "Sesión segura verificada" muestra una explicación contextual de qué protege la UI y qué depende del backend del SLEP |
 | Sellos de confianza | La UI muestra "Sesión segura verificada" y "Flujo verificado" en puntos clave |
 | CTA sticky en papeleta | En móvil, el botón principal queda más accesible y reduce scroll innecesario |
 | Detección de múltiples pestañas | Advertencia visual para continuar en una sola pestaña del portal |
 | Soporte visible | Franja persistente recordando la mesa de ayuda o canal del establecimiento |
+| Pantalla protegida por foco | Si la pestaña pierde foco durante OTP o voto, la UI puede ocultar temporalmente datos sensibles hasta reanudar la vista |
 
 ---
 
@@ -238,7 +243,6 @@ El detalle completo de responsabilidades, endpoints esperados, decisiones que ca
 | `Permissions-Policy` | `camera=(), microphone=(), geolocation=(), payment=(), usb=(), serial=(), display-capture=()` | APIs de hardware |
 | `Cross-Origin-Opener-Policy` | `same-origin` | Spectre / window.opener |
 | `Cross-Origin-Resource-Policy` | `same-origin` | Embebido de recursos entre orígenes |
-| `Cross-Origin-Resource-Policy` | `same-origin` | Embedding de recursos |
 
 ### Rate limiting
 
@@ -253,6 +257,8 @@ El detalle completo de responsabilidades, endpoints esperados, decisiones que ca
 - Si el navegador restaura la página desde caché, la UI reinicia el flujo para evitar datos visuales obsoletos.
 - Si se detecta otra pestaña activa, la interfaz avisa al usuario para continuar en una sola.
 - OTP y correo se muestran parcialmente enmascarados cuando aparecen como referencia visual.
+- El acceso a accesibilidad vive en un botón flotante único, con panel compacto de iconos para no invadir el flujo principal.
+- El sello `Sesión segura verificada` incluye tooltip contextual visible por encima del contenido para explicar el alcance de protección de la UI.
 - Login, OTP y correo desactivan `autoComplete`, `autoCorrect` y `spellCheck` donde resulta riesgoso en puestos compartidos.
 - El comprobante final puede imprimirse con una hoja limpia orientada a verificación visual, no a auditoría electoral final.
 
@@ -267,7 +273,7 @@ El detalle completo de responsabilidades, endpoints esperados, decisiones que ca
 
 - RUT número: allowlist `[0-9]` + `pattern="[0-9]*"` + `inputMode="numeric"`
 - RUT dígito: allowlist `[0-9kK]` + `inputMode="text"`
-- OTP: allowlist `[0-9]` por caja + `pattern="[0-9]*"` + `autoComplete="one-time-code"`
+- OTP: allowlist `[0-9]` por caja + `pattern="[0-9]*"` + `autoComplete="off"`
 - Email: `type="email"` + `maxLength={254}`
 
 ---

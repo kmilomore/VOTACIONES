@@ -44,8 +44,10 @@ src/
 │   └── api/                # Route Handlers — BFF interno del flujo
 │   └── globals.css         # Variables CSS, paleta institucional, componentes
 ├── components/
+│   ├── AccessibilityPanel.tsx # Botón flotante discreto + panel compacto por iconos para accesibilidad y multidiversidad
+│   ├── HelpTooltip.tsx     # Tooltip reutilizable para ayuda contextual y sellos explicables
 │   └── views/              # Vistas aisladas, una por cada estado del flujo
-│       ├── IntroView.tsx   # Pantalla inicial — orientación previa, simulación guiada, contraste, privacidad y lectura simplificada
+│       ├── IntroView.tsx   # Pantalla inicial — orientación previa, simulación guiada y referencia al acceso flotante de accesibilidad
 │       ├── LoginView.tsx   # Paso 1: RUT (número + dígito verificador) + email con copy simplificado opcional
 │       ├── OtpView.tsx     # Paso 2: código OTP de 6 dígitos + tarjeta de usuario anonimizada + privacidad reforzada
 │       ├── VotingView.tsx  # Paso 3: papeleta + temporizador 120s + CTA sticky + modal + sello de flujo verificado
@@ -190,6 +192,8 @@ Este archivo `context.md` se concentra en arquitectura, componentes, flujo visua
 | Clase | Descripción |
 |---|---|
 | `.bg-portal` | Wrapper raíz con fondo `fondo.webp` |
+| `.a11y-fab` | Botón flotante discreto abajo a la derecha para abrir accesibilidad |
+| `.a11y-icon-button` | Botones compactos por icono dentro del panel de accesibilidad |
 | `.candidate-badge` | Badge circular con color de acento del candidato (`color-mix`) |
 | `.candidate-selected` | Estado seleccionado de tarjeta de candidato |
 | `.view-enter-forward` | Slide desde la derecha al avanzar entre pasos (0.25s ease-out) |
@@ -200,18 +204,20 @@ Este archivo `context.md` se concentra en arquitectura, componentes, flujo visua
 | `.check-path` | Trazo SVG del check con animación `stroke-dashoffset` |
 | `.modal-backdrop` | Overlay del modal de confirmación (fixed, blur, z-50) |
 | `.modal-panel` | Panel del modal con animación spring de entrada |
+| `.help-tooltip` | Tooltip de ayuda contextual con z-index elevado para no quedar detrás del contenido |
 | `.portal-contrast-high` | Overrides de alto contraste para fondos, texto, inputs, botones y estados |
+| `.portal-font-small` | Ajuste moderado de escala tipográfica para texto de lectura y controles principales |
+| `.portal-font-large` | Ajuste moderado de escala tipográfica sin romper badges ni layouts compactos |
 | `.portal-simplified-mode` | Ajuste global de lectura simplificada para densidad y ritmo del texto |
 | `.receipt-card` | Tarjeta del comprobante final con borde interno punteado e impresión limpia |
+| `.screen-shield` | Capa de protección visual al perder foco durante OTP o voto |
 
 ### IntroView — Orientación previa
 
 Antes del login, la aplicación muestra una pantalla breve con:
 - lista de elementos necesarios para completar el proceso,
 - activación de **modo simulación guiada**,
-- activación de **contraste alto institucional**,
-- activación de **privacy mode** para reducir datos visibles en pantalla,
-- activación de **lectura simplificada** para copy más directo,
+- referencia visible al **botón flotante de accesibilidad** para contraste, privacidad, lectura simplificada, movimiento reducido y tamaño de texto,
 - recordatorio visible del canal de soporte durante la jornada.
 
 La intención es reducir dudas antes del primer input y evitar que el usuario entre al flujo sin contexto mínimo.
@@ -263,6 +269,8 @@ Implementada en `page.tsx` como componente inline (no vista separada). Renderiza
 
 Entre la barra y la vista activa, `page.tsx` inyecta una franja breve de ayuda contextual del paso actual con la acción siguiente esperada.
 
+Además, `page.tsx` agrega una franja explicativa breve indicando por qué se solicita cada dato en `login`, `otp` y `vote`, reforzando transparencia de la UI sin delegar lógica sensible al cliente.
+
 ### LoginView — Validación de RUT en tiempo real
 
 - Implementa el algoritmo módulo 11 del RUT chileno (`validateRut`) directamente en el componente.
@@ -285,6 +293,28 @@ Entre la barra y la vista activa, `page.tsx` inyecta una franja breve de ayuda c
 - El formulario usa `autoComplete="off"` para RUT, dígito verificador y correo.
 - Los campos desactivan autocorrección, capitalización inesperada y spellcheck donde corresponde.
 - Si está activo **modo de lectura simplificada**, el título y las instrucciones se reducen a copy más corto y directo.
+
+### AccessibilityPanel — acceso flotante y compacto
+
+- La accesibilidad ya no vive en múltiples toggles distribuidos por la UI; se centraliza en un **botón flotante discreto** abajo a la derecha.
+- Al abrirse, muestra un panel compacto con **iconos de acción rápida** para:
+  - contraste alto,
+  - lectura simplificada,
+  - privacidad visible,
+  - movimiento reducido,
+  - tamaño de texto (`A-`, `A`, `A+`).
+- La escala tipográfica afecta principalmente texto de lectura y controles principales, evitando romper badges, chips o layouts compactos.
+- La intención es mantener la ayuda accesible sin contaminar la pantalla inicial ni el resto del flujo con demasiados controles visibles.
+
+### Sello visual de sesión segura con tooltip explicable
+
+- La banda institucional superior mantiene la marca **Sesion segura verificada**.
+- El sello ahora incluye un tooltip contextual (`HelpTooltip`) que explica qué protege la UI:
+  - una sola pestaña activa,
+  - ocultamiento visual opcional,
+  - expiración por inactividad,
+  - guardas del flujo.
+- El tooltip usa una capa visual superior para no quedar detrás de las tarjetas o bandas del contenido siguiente.
 
 ### VotingView — Modal de confirmación
 
@@ -324,7 +354,7 @@ El skeleton de carga de papeleta replica la geometría real del `VotingView`:
 
 ### Contraste alto institucional
 
-- Activable desde la pantalla inicial y desde la banda superior del portal.
+- Activable desde el botón flotante de accesibilidad.
 - Sobrescribe fondos, textos, inputs, botones, badges, tarjetas seleccionadas y estados de alerta.
 - Está pensado para jornadas presenciales, monitores de baja calidad o usuarios que requieren una paleta más dura.
 
@@ -338,16 +368,23 @@ El skeleton de carga de papeleta replica la geometría real del `VotingView`:
 
 - Reduce datos personales visibles en OTP, papeleta y comprobante final.
 - Está pensado para puestos compartidos, acompañamiento presencial o salas con observadores cercanos.
+- Se activa desde el panel flotante compacto y convive con la pantalla de protección visual por pérdida de foco.
 
 ### Lectura simplificada
 
 - Ajusta el tono de las instrucciones en intro, login, OTP, papeleta y confirmación.
 - Añade una capa visual global (`.portal-simplified-mode`) con mejor ritmo de lectura y menor fricción cognitiva.
 
+### Movimiento reducido y escala tipográfica moderada
+
+- El panel flotante incorpora una opción de **movimiento reducido** para minimizar animaciones y transiciones.
+- También incorpora ajuste de **tamaño de texto** con escala moderada para no desbordar chips, badges ni contenedores estrechos.
+
 ### Sello visual de sesión segura
 
 - La banda institucional superior muestra la marca **Sesion segura verificada**.
 - La papeleta y el comprobante final incorporan sellos de **Flujo verificado** para reforzar confianza visual.
+- El sello superior ahora es además **explicable** mediante tooltip, para evitar confianza ciega sin contexto.
 
 ### Soporte visible en UI
 
@@ -361,6 +398,7 @@ El skeleton de carga de papeleta replica la geometría real del `VotingView`:
 - Limpieza de sesión al volver desde caché del navegador (`pageshow persisted`).
 - Protección contra doble envío en acciones críticas.
 - Reinicio defensivo si el cliente detecta estados imposibles, por ejemplo `vote` sin usuario o `success` sin comprobante.
+- Pantalla de protección visual (`screen-shield`) al perder foco durante `otp` o `vote`, con ocultamiento temporal de datos sensibles hasta reanudar la vista.
 
 ---
 
@@ -501,6 +539,7 @@ Gestionados en dos capas:
 | Fase 2e | Padrones por estamento: 3 usuarios ficticios, candidatos por padrón, OtpView con tarjeta de usuario, VotingView con badge de padrón, filtro dinámico de papeleta | ✅ Completado |
 | Fase 2f | Pulido UX frontend: IntroView, simulación guiada, contraste alto, soporte visible, guardas de sesión y advertencias multi-pestaña | ✅ Completado |
 | Fase 2g | Pulido de confianza y privacidad: privacy mode, lectura simplificada, autofill endurecido, sello visual de flujo y comprobante imprimible | ✅ Completado |
+| Fase 2h | Accesibilidad flotante compacta: botón discreto por iconos, tooltip explicable de sesión segura, movimiento reducido y escala tipográfica moderada | ✅ Completado |
 | Fase 3 | Backend: autenticación real, envío de correo, base de datos | ⬜ Pendiente |
 | Fase 4 | Despliegue en producción (Vercel + BD serverless) | ⬜ Pendiente |
 
