@@ -2,7 +2,7 @@
 
 ## Descripción general
 
-Portal web institucional para la emisión de votos del **Consejo Local del Servicio Local de Educación Pública (SLEP) Santiago Centro**. La aplicación implementa un flujo guiado de 4 pasos: identificación por RUT, verificación OTP, papeleta digital con temporizador y confirmación de voto.
+Portal web institucional para la emisión de votos del **Consejo Local del Servicio Local de Educación Pública (SLEP) COLCHAGUA**. La aplicación implementa un flujo guiado de 4 pasos: identificación por RUT, verificación OTP, papeleta digital con temporizador y confirmación de voto.
 
 ---
 

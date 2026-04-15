@@ -37,7 +37,7 @@ La expectativa de este documento es simple: cualquier equipo local puede conserv
 {
   "user": {
     "fullName": "Nombre completo del votante",
-    "organization": "SLEP Santiago Centro"
+    "organization": "SLEP COLCHAGUA
   }
 }
 ```

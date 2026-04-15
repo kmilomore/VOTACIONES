@@ -208,6 +208,11 @@ function SchoolsTable({ schools }: { schools: SchoolResult[] }) {
     return <span className="text-blue-600 ml-1">{asc ? '↑' : '↓'}</span>;
   }
 
+  function getAriaSort(key: SortKey): 'ascending' | 'descending' | 'none' {
+    if (sortKey !== key) return 'none';
+    return sortAsc ? 'ascending' : 'descending';
+  }
+
   return (
     <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
       <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
@@ -221,10 +226,16 @@ function SchoolsTable({ schools }: { schools: SchoolResult[] }) {
           <thead>
             <tr className="bg-gray-50 border-b border-gray-100">
               <th
-                className="px-5 py-3 text-left font-semibold text-gray-600 cursor-pointer hover:text-gray-900 select-none"
-                onClick={() => toggleSort('name')}
+                aria-sort={getAriaSort('name')}
+                className="px-5 py-3 text-left font-semibold text-gray-600"
               >
-                Establecimiento <SortIcon active={sortKey === 'name'} asc={sortAsc} />
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-1 cursor-pointer hover:text-gray-900 select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0b5294]/35 rounded-sm"
+                  onClick={() => toggleSort('name')}
+                >
+                  Establecimiento <SortIcon active={sortKey === 'name'} asc={sortAsc} />
+                </button>
               </th>
               <th className="px-4 py-3 text-center font-semibold text-gray-600" style={{ color: '#1a4a7a' }}>
                 Dir.
@@ -236,10 +247,16 @@ function SchoolsTable({ schools }: { schools: SchoolResult[] }) {
                 Asi.
               </th>
               <th
-                className="px-5 py-3 text-right font-semibold text-gray-600 cursor-pointer hover:text-gray-900 select-none"
-                onClick={() => toggleSort('status')}
+                aria-sort={getAriaSort('status')}
+                className="px-5 py-3 text-right font-semibold text-gray-600"
               >
-                Estado <SortIcon active={sortKey === 'status'} asc={sortAsc} />
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-1 cursor-pointer hover:text-gray-900 select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0b5294]/35 rounded-sm"
+                  onClick={() => toggleSort('status')}
+                >
+                  Estado <SortIcon active={sortKey === 'status'} asc={sortAsc} />
+                </button>
               </th>
             </tr>
           </thead>

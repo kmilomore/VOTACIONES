@@ -1,5 +1,5 @@
 /**
- * Mock establishments (establecimientos) for SLEP Santiago Centro.
+ * Mock establishments (establecimientos) for SLEP COLCHAGUA.
  * Each school has a voter count per estamento that makes up the total padrón.
  *
  * Padron totals:

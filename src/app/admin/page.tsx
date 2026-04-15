@@ -169,7 +169,7 @@ export default function AdminPage() {
               Panel Administrativo
             </h1>
             <p className="text-sm mt-1" style={{ color: '#5b6b7f' }}>
-              Métricas en tiempo real · SLEP Santiago Centro
+              Métricas en tiempo real · SLEP COLCHAGUA
             </p>
           </div>
 

@@ -49,6 +49,8 @@ export function LoginView({
   onSubmit,
 }: LoginViewProps) {
   const rutStatus = validateRut(rutNumber, rutVerifier);
+  const errorId = errorMessage ? 'login-form-error' : undefined;
+  const rutStatusId = rutStatus !== 'empty' ? 'rut-status' : undefined;
 
   return (
     <section className="rounded-2xl bg-white/95 backdrop-blur-sm border border-slate-900/10 text-[#0c2138] p-5">
@@ -63,10 +65,14 @@ export function LoginView({
       </div>
 
       <form className="grid gap-3.5" onSubmit={onSubmit}>
-        <div className="grid gap-2">
-          <span className={labelClass}>RUT</span>
+        <fieldset className="grid gap-2 min-w-0">
+          <legend className={labelClass}>RUT</legend>
           <div className="grid grid-cols-[1fr_auto_88px] gap-2 items-center">
+            <label className="sr-only" htmlFor="rut-number">
+              Numero de RUT
+            </label>
             <input
+              id="rut-number"
               className={inputClass}
               type="text"
               inputMode="numeric"
@@ -74,6 +80,7 @@ export function LoginView({
               autoComplete="off"
               placeholder="12345678"
               value={rutNumber}
+              aria-describedby={[rutStatusId, errorId].filter(Boolean).join(' ') || undefined}
               onChange={(event) => {
                 // Allowlist: only ASCII digits 0-9, max 8 chars
                 const sanitized = event.target.value.replace(/[^0-9]/g, '').slice(0, 8);
@@ -82,13 +89,18 @@ export function LoginView({
               required
             />
             <span className="text-[#36506c] text-xl font-bold select-none">–</span>
+            <label className="sr-only" htmlFor="rut-verifier">
+              Digito verificador
+            </label>
             <input
+              id="rut-verifier"
               className={`${inputClass} text-center uppercase`}
               type="text"
               inputMode="text"
               autoComplete="off"
               placeholder="9"
               value={rutVerifier}
+              aria-describedby={[rutStatusId, errorId].filter(Boolean).join(' ') || undefined}
               onChange={(event) => {
                 // Allowlist: only digits 0-9 or letter K/k, single char
                 const sanitized = event.target.value.replace(/[^0-9kK]/g, '').slice(0, 1).toUpperCase();
@@ -98,7 +110,7 @@ export function LoginView({
             />
           </div>
           {rutStatus !== 'empty' ? (
-            <p className={`m-0 flex items-center gap-1.5 text-[12px] font-sans font-medium ${rutStatus === 'valid' ? 'text-emerald-600' : 'text-red-500'}`}>
+            <p id="rut-status" className={`m-0 flex items-center gap-1.5 text-[12px] font-sans font-medium ${rutStatus === 'valid' ? 'text-emerald-600' : 'text-red-500'}`}>
               {rutStatus === 'valid' ? (
                 <>
                   <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true">
@@ -118,10 +130,10 @@ export function LoginView({
               )}
             </p>
           ) : null}
-        </div>
+        </fieldset>
 
         <label className="grid gap-2">
-          <span className={labelClass}>Correo electronico</span>
+          <span className={labelClass} id="email-label">Correo electronico</span>
           <input
             className={inputClass}
             type="email"
@@ -129,13 +141,14 @@ export function LoginView({
             maxLength={254}
             placeholder="usuario@slep.cl"
             value={email}
+            aria-describedby={errorId}
             onChange={(event) => onEmailChange(event.target.value)}
             required
           />
         </label>
 
         {errorMessage ? (
-          <p className="m-0 px-3.5 py-2.5 rounded-xl text-[13px] font-sans font-medium text-red-600 bg-red-50 border border-red-200">
+          <p id="login-form-error" role="alert" aria-live="assertive" className="m-0 px-3.5 py-2.5 rounded-xl text-[13px] font-sans font-medium text-red-600 bg-red-50 border border-red-200">
             {errorMessage}
           </p>
         ) : null}

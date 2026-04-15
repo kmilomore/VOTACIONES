@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 import type { Candidate, Estamento } from '@/types';
 
@@ -48,12 +48,54 @@ export function VotingView({
   onSubmitVote,
 }: VotingViewProps) {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const confirmButtonRef = useRef<HTMLButtonElement | null>(null);
+  const cancelButtonRef = useRef<HTMLButtonElement | null>(null);
+  const modalPanelRef = useRef<HTMLDivElement | null>(null);
   const selectedCandidate = candidates.find((c) => c.id === selectedCandidateId) ?? null;
 
   function handleConfirmClick() {
     if (!selectedCandidateId || hasExpired) return;
     setShowConfirmModal(true);
   }
+
+  useEffect(() => {
+    if (!showConfirmModal) {
+      confirmButtonRef.current?.focus();
+      return;
+    }
+
+    cancelButtonRef.current?.focus();
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        setShowConfirmModal(false);
+        return;
+      }
+
+      if (event.key !== 'Tab' || !modalPanelRef.current) return;
+
+      const focusable = modalPanelRef.current.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      );
+
+      if (focusable.length === 0) return;
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showConfirmModal]);
 
   return (
     <>
@@ -146,6 +188,7 @@ export function VotingView({
 
       <div className="flex justify-end mt-3">
         <button
+          ref={confirmButtonRef}
           className="inline-flex items-center justify-center h-11 px-6 rounded-xl bg-[#0b5294] text-white font-sans text-sm font-bold tracking-wide shadow-[0_4px_14px_rgba(11,82,148,0.40),inset_0_1px_0_rgba(255,255,255,0.12)] hover:bg-[#0a4278] hover:-translate-y-px active:translate-y-0 disabled:opacity-45 disabled:cursor-not-allowed transition-all duration-150"
           type="button"
           onClick={handleConfirmClick}
@@ -161,14 +204,15 @@ export function VotingView({
           role="dialog"
           aria-modal="true"
           aria-labelledby="modal-title"
+          aria-describedby="modal-description"
           onClick={(e) => { if (e.target === e.currentTarget) setShowConfirmModal(false); }}
         >
-          <div className="modal-panel">
+          <div ref={modalPanelRef} className="modal-panel">
             <div className="p-5 border-b border-slate-900/[0.08]">
               <h2 id="modal-title" className="m-0 font-serif text-[20px] text-ink leading-tight tracking-tight">
                 Confirma tu voto
               </h2>
-              <p className="mt-1.5 mb-0 text-sm text-ink-muted font-sans">
+              <p id="modal-description" className="mt-1.5 mb-0 text-sm text-ink-muted font-sans">
                 Esta accion no se puede deshacer.
               </p>
             </div>
@@ -187,6 +231,7 @@ export function VotingView({
               </div>
               <div className="flex gap-2.5">
                 <button
+                  ref={cancelButtonRef}
                   className="flex-1 inline-flex items-center justify-center h-11 px-4 rounded-xl bg-white text-[#1c3d5c] font-sans text-sm font-bold border-[1.5px] border-slate-900/[0.14] hover:bg-slate-50 transition-all duration-150 disabled:opacity-45"
                   type="button"
                   onClick={() => setShowConfirmModal(false)}
