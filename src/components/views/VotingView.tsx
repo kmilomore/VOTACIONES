@@ -24,6 +24,7 @@ interface VotingViewProps {
   isDemoMode: boolean;
   isPrivacyMode: boolean;
   isSimplifiedMode: boolean;
+  isScreenObscured: boolean;
   selectedCandidateId: string | null;
   remainingSeconds: number;
   hasExpired: boolean;
@@ -46,6 +47,7 @@ export function VotingView({
   isDemoMode,
   isPrivacyMode,
   isSimplifiedMode,
+  isScreenObscured,
   selectedCandidateId,
   remainingSeconds,
   hasExpired,
@@ -125,13 +127,13 @@ export function VotingView({
             />
           </div>
           <div className="mt-2 flex flex-wrap items-center gap-2">
-            <p className="m-0 text-sm text-ink-muted font-sans leading-relaxed">
+            <p className={`m-0 text-sm text-ink-muted font-sans leading-relaxed ${isScreenObscured ? 'sensitive-blur' : ''}`}>
               {isSimplifiedMode
                 ? `${displayName}, marca una candidatura y confirma una vez.`
                 : `${displayName}, selecciona una candidatura y confirma tu voto antes de que expire la sesion.`}
             </p>
             <span
-              className="inline-flex shrink-0 px-2.5 py-1 rounded-full text-[10px] font-bold font-sans uppercase tracking-wide"
+              className={`inline-flex shrink-0 px-2.5 py-1 rounded-full text-[10px] font-bold font-sans uppercase tracking-wide ${isScreenObscured ? 'sensitive-blur' : ''}`}
               style={{
                 background: `color-mix(in srgb, ${ESTAMENTO_COLORS[estamento]} 14%, white)`,
                 color: ESTAMENTO_COLORS[estamento],

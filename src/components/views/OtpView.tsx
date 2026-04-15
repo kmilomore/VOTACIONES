@@ -38,6 +38,7 @@ interface OtpViewProps {
   otp: string;
   isPrivacyMode: boolean;
   isSimplifiedMode: boolean;
+  isScreenObscured: boolean;
   isSubmitting: boolean;
   isLocked: boolean;
   errorMessage: string | null;
@@ -55,6 +56,7 @@ export function OtpView({
   otp,
   isPrivacyMode,
   isSimplifiedMode,
+  isScreenObscured,
   isSubmitting,
   isLocked,
   errorMessage,
@@ -112,16 +114,16 @@ export function OtpView({
         </div>
         <p className="mt-2 mb-0 text-sm text-ink-muted font-sans leading-relaxed">
           {isSimplifiedMode ? (
-            <>Te enviamos un codigo a <strong>{maskedEmail}</strong>. Escríbelo abajo.</>
+            <>Te enviamos un codigo a <strong className={isScreenObscured ? 'sensitive-blur' : ''}>{maskedEmail}</strong>. Escríbelo abajo.</>
           ) : (
-            <>Enviamos un codigo de 6 digitos a <strong>{maskedEmail}</strong>. Ingresalo a continuacion.</>
+            <>Enviamos un codigo de 6 digitos a <strong className={isScreenObscured ? 'sensitive-blur' : ''}>{maskedEmail}</strong>. Ingresalo a continuacion.</>
           )}
         </p>
       </div>
 
       {/* User info card */}
       {user ? (
-        <div className="mb-4 flex items-center gap-3 px-3.5 py-3 rounded-2xl bg-slate-50 border border-slate-900/[0.08]">
+        <div className={`mb-4 flex items-center gap-3 px-3.5 py-3 rounded-2xl bg-slate-50 border border-slate-900/[0.08] ${isScreenObscured ? 'sensitive-panel-blur' : ''}`}>
           <div
             className="shrink-0 w-10 h-10 rounded-full inline-grid place-items-center text-[13px] font-bold font-sans"
             style={{
@@ -132,10 +134,10 @@ export function OtpView({
             {user.fullName.split(' ').slice(0, 2).map((n) => n[0]).join('')}
           </div>
           <div className="min-w-0">
-            <p className="m-0 font-sans font-bold text-[14px] text-ink leading-tight truncate">
+            <p className={`m-0 font-sans font-bold text-[14px] text-ink leading-tight truncate ${isScreenObscured ? 'sensitive-blur' : ''}`}>
               {isPrivacyMode ? 'Participante verificado' : maskFullName(user.fullName)}
             </p>
-            <p className="m-0 mt-0.5 font-sans text-[11px] text-ink-muted leading-tight">
+            <p className={`m-0 mt-0.5 font-sans text-[11px] text-ink-muted leading-tight ${isScreenObscured ? 'sensitive-blur' : ''}`}>
               {isPrivacyMode ? 'Datos visibles reducidos por privacidad' : user.organization}
             </p>
           </div>

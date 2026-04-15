@@ -1,27 +1,12 @@
 interface IntroViewProps {
   isDemoMode: boolean;
-  isHighContrast: boolean;
-  isPrivacyMode: boolean;
-  isSimplifiedMode: boolean;
   onDemoModeChange: (enabled: boolean) => void;
-  onHighContrastChange: (enabled: boolean) => void;
-  onPrivacyModeChange: (enabled: boolean) => void;
-  onSimplifiedModeChange: (enabled: boolean) => void;
   onStart: () => void;
 }
 
-const toggleLabelClass =
-  'text-[11px] font-bold font-sans text-[#1c3d5c] uppercase tracking-wide';
-
 export function IntroView({
   isDemoMode,
-  isHighContrast,
-  isPrivacyMode,
-  isSimplifiedMode,
   onDemoModeChange,
-  onHighContrastChange,
-  onPrivacyModeChange,
-  onSimplifiedModeChange,
   onStart,
 }: IntroViewProps) {
   return (
@@ -53,7 +38,7 @@ export function IntroView({
 
         <div className="grid gap-3 md:grid-cols-2">
           <label className="grid gap-2 rounded-2xl border border-slate-900/[0.08] bg-white px-4 py-3.5 cursor-pointer">
-            <span className={toggleLabelClass}>Modo de simulacion</span>
+            <span className="text-[11px] font-bold font-sans text-[#1c3d5c] uppercase tracking-wide">Modo de simulacion</span>
             <span className="text-[13px] font-sans leading-relaxed text-[#4e6a85]">
               Recorre el flujo como capacitacion. La UI remarca que estas en un entorno de demostracion y evita ambiguedades con una jornada real.
             </span>
@@ -68,53 +53,15 @@ export function IntroView({
             </span>
           </label>
 
-          <label className="grid gap-2 rounded-2xl border border-slate-900/[0.08] bg-white px-4 py-3.5 cursor-pointer">
-            <span className={toggleLabelClass}>Legibilidad</span>
+          <div className="grid gap-2 rounded-2xl border border-slate-900/[0.08] bg-white px-4 py-3.5">
+            <span className="text-[11px] font-bold font-sans text-[#1c3d5c] uppercase tracking-wide">Ajustes de accesibilidad</span>
             <span className="text-[13px] font-sans leading-relaxed text-[#4e6a85]">
-              Activa un contraste mas fuerte para jornadas presenciales, pantallas con brillo irregular o usuarios que prefieren bordes y textos mas marcados.
+              Los ajustes de contraste, tamaño de texto, lectura simplificada, privacidad visible y movimiento reducido estan disponibles en el boton discreto ubicado abajo a la derecha.
             </span>
-            <span className="mt-1 inline-flex items-center gap-2 text-[13px] font-sans font-medium text-[#0c2138]">
-              <input
-                type="checkbox"
-                className="h-4 w-4 rounded border-slate-300 text-[#0b5294] focus:ring-[#0b5294]"
-                checked={isHighContrast}
-                onChange={(event) => onHighContrastChange(event.target.checked)}
-              />
-              Activar contraste alto institucional
+            <span className="mt-1 inline-flex items-center gap-2 text-[12px] font-sans font-medium text-[#0c2138]">
+              Usa ese acceso en cualquier paso del flujo sin salir de la pantalla actual.
             </span>
-          </label>
-
-          <label className="grid gap-2 rounded-2xl border border-slate-900/[0.08] bg-white px-4 py-3.5 cursor-pointer">
-            <span className={toggleLabelClass}>Privacy mode</span>
-            <span className="text-[13px] font-sans leading-relaxed text-[#4e6a85]">
-              Oculta nombres visibles en pantallas compartidas y reduce la exposición de datos mientras el votante completa el flujo.
-            </span>
-            <span className="mt-1 inline-flex items-center gap-2 text-[13px] font-sans font-medium text-[#0c2138]">
-              <input
-                type="checkbox"
-                className="h-4 w-4 rounded border-slate-300 text-[#0b5294] focus:ring-[#0b5294]"
-                checked={isPrivacyMode}
-                onChange={(event) => onPrivacyModeChange(event.target.checked)}
-              />
-              Ocultar datos visibles
-            </span>
-          </label>
-
-          <label className="grid gap-2 rounded-2xl border border-slate-900/[0.08] bg-white px-4 py-3.5 cursor-pointer">
-            <span className={toggleLabelClass}>Lectura simplificada</span>
-            <span className="text-[13px] font-sans leading-relaxed text-[#4e6a85]">
-              Usa textos más directos y una lectura más calmada para usuarios nerviosos o con baja alfabetización digital.
-            </span>
-            <span className="mt-1 inline-flex items-center gap-2 text-[13px] font-sans font-medium text-[#0c2138]">
-              <input
-                type="checkbox"
-                className="h-4 w-4 rounded border-slate-300 text-[#0b5294] focus:ring-[#0b5294]"
-                checked={isSimplifiedMode}
-                onChange={(event) => onSimplifiedModeChange(event.target.checked)}
-              />
-              Activar lectura simplificada
-            </span>
-          </label>
+          </div>
         </div>
 
         <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3.5">

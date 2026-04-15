@@ -2,6 +2,8 @@
 
 import React, { memo, useEffect, useRef, useState } from 'react';
 
+import { AccessibilityPanel } from '@/components/AccessibilityPanel';
+import { HelpTooltip } from '@/components/HelpTooltip';
 import { IntroView } from '@/components/views/IntroView';
 import { LoginView } from '@/components/views/LoginView';
 import { OtpView } from '@/components/views/OtpView';
@@ -22,6 +24,12 @@ const MAX_OTP_ATTEMPTS = 3;
 const IDLE_TIMEOUT_MS = 5 * 60 * 1000;
 const IDLE_WARNING_SECONDS = 60;
 const STEPS = ['Identificacion', 'Verificacion', 'Papeleta'] as const;
+const SLOW_REQUEST_MS = 900;
+const VERY_SLOW_REQUEST_MS = 2200;
+
+type PendingOperation = 'login' | 'otp' | 'ballot' | 'vote' | null;
+type LatencyState = 'idle' | 'slow' | 'very-slow';
+type FontScale = 'small' | 'normal' | 'large';
 
 const STEP_INDEX: Record<AppState, number> = {
   intro: 0,
@@ -37,6 +45,21 @@ const STEP_GUIDANCE: Partial<Record<AppState, { current: string; next: string }>
   vote: { current: 'Papeleta', next: 'Selecciona una candidatura y confirma una sola vez.' },
 };
 
+const DATA_EXPLANATION: Partial<Record<AppState, { title: string; detail: string }>> = {
+  login: {
+    title: 'Por que pedimos estos datos',
+    detail: 'El RUT permite ubicar tu registro en el padron y el correo institucional se usa para enviarte el codigo de verificacion.',
+  },
+  otp: {
+    title: 'Por que pedimos el codigo OTP',
+    detail: 'El codigo confirma que quien continua el flujo tiene acceso al canal institucional asociado al registro.',
+  },
+  vote: {
+    title: 'Por que mostramos el padron',
+    detail: 'El padron visible te ayuda a comprobar que la papeleta corresponde a tu estamento antes de confirmar el voto.',
+  },
+};
+
 const ALLOWED_TRANSITIONS: Record<AppState, AppState[]> = {
   intro: ['login'],
   login: ['otp'],
@@ -49,6 +72,35 @@ function formatShortTimer(totalSeconds: number) {
   const minutes = String(Math.floor(totalSeconds / 60)).padStart(2, '0');
   const seconds = String(totalSeconds % 60).padStart(2, '0');
   return `${minutes}:${seconds}`;
+}
+
+function getLatencyMessage(operation: PendingOperation, latencyState: LatencyState) {
+  if (!operation || latencyState === 'idle') {
+    return null;
+  }
+
+  const variant = latencyState === 'very-slow' ? 'very-slow' : 'slow';
+
+  const messages = {
+    login: {
+      slow: 'La validacion de RUT y correo esta tardando mas de lo habitual. Manten esta pantalla abierta.',
+      'very-slow': 'La conexion esta lenta. Seguimos verificando tus datos sin perder el avance actual.',
+    },
+    otp: {
+      slow: 'La verificacion del codigo OTP sigue en curso. No cierres ni recargues la pestaña.',
+      'very-slow': 'La respuesta del codigo esta demorada. Conserva esta pantalla abierta mientras completamos la validacion.',
+    },
+    ballot: {
+      slow: 'La carga de la papeleta esta tomando mas tiempo de lo normal. Seguimos consultando tu padron.',
+      'very-slow': 'La red esta lenta. Mantendremos tu sesion mientras terminamos de cargar la papeleta.',
+    },
+    vote: {
+      slow: 'Estamos registrando la emision del voto. Evita salir de esta pantalla.',
+      'very-slow': 'La confirmacion del voto esta tardando mas de lo habitual. No pulses nuevamente mientras finalizamos.',
+    },
+  } as const;
+
+  return messages[operation][variant];
 }
 
 const StepProgress = memo(function StepProgress({ currentStep }: { currentStep: number }) {
@@ -98,7 +150,7 @@ const StepProgress = memo(function StepProgress({ currentStep }: { currentStep: 
 
 const SupportStrip = memo(function SupportStrip() {
   return (
-    <div className="mx-1 mt-2 rounded-2xl border border-slate-900/[0.08] bg-slate-50 px-4 py-3">
+    <div className="mx-1 mt-2 rounded-2xl border border-slate-900/[0.08] bg-slate-50 px-4 py-3" data-decorative="true">
       <p className="m-0 text-[11px] font-bold font-sans uppercase tracking-[0.14em] text-[#1c3d5c]">
         Soporte visible durante la jornada
       </p>
@@ -131,13 +183,20 @@ export default function HomePage() {
   const [isHighContrast, setIsHighContrast] = useState(false);
   const [isPrivacyMode, setIsPrivacyMode] = useState(false);
   const [isSimplifiedMode, setIsSimplifiedMode] = useState(false);
+  const [isReducedMotion, setIsReducedMotion] = useState(false);
+  const [fontScale, setFontScale] = useState<FontScale>('normal');
+  const [isAccessibilityPanelOpen, setIsAccessibilityPanelOpen] = useState(false);
   const [idleWarningSeconds, setIdleWarningSeconds] = useState<number | null>(null);
   const [showMultiTabWarning, setShowMultiTabWarning] = useState(false);
   const [receiptIssuedAt, setReceiptIssuedAt] = useState<string>('');
+  const [isWindowHidden, setIsWindowHidden] = useState(false);
+  const [pendingOperation, setPendingOperation] = useState<PendingOperation>(null);
+  const [latencyState, setLatencyState] = useState<LatencyState>('idle');
 
   const appStateRef = useRef(appState);
   const idleResetRef = useRef<() => void>(() => undefined);
   const broadcastChannelRef = useRef<BroadcastChannel | null>(null);
+  const isVisibilitySensitiveState = appState === 'otp' || appState === 'vote';
   const tabIdRef = useRef(
     typeof crypto !== 'undefined' && 'randomUUID' in crypto
       ? crypto.randomUUID()
@@ -181,6 +240,82 @@ export default function HomePage() {
     setLoginAttempts(0);
     clearAuthenticatedState(nextState);
   }
+
+  async function runMeasuredRequest<T>(operation: Exclude<PendingOperation, null>, action: () => Promise<T>) {
+    const startedAt = typeof performance !== 'undefined' ? performance.now() : Date.now();
+    setPendingOperation(operation);
+    setLatencyState('idle');
+
+    const slowTimer = window.setTimeout(() => {
+      setLatencyState('slow');
+    }, SLOW_REQUEST_MS);
+
+    const verySlowTimer = window.setTimeout(() => {
+      setLatencyState('very-slow');
+    }, VERY_SLOW_REQUEST_MS);
+
+    try {
+      return await action();
+    } finally {
+      window.clearTimeout(slowTimer);
+      window.clearTimeout(verySlowTimer);
+      setPendingOperation(null);
+      setLatencyState('idle');
+    }
+  }
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return undefined;
+    }
+
+    function hideProtectedContent() {
+      if (appStateRef.current === 'otp' || appStateRef.current === 'vote') {
+        setIsWindowHidden(true);
+      }
+    }
+
+    function syncVisibility() {
+      if (document.hidden) {
+        hideProtectedContent();
+      }
+    }
+
+    function revealProtectedContent() {
+      if (!document.hidden && appStateRef.current !== 'otp' && appStateRef.current !== 'vote') {
+        setIsWindowHidden(false);
+      }
+    }
+
+    document.addEventListener('visibilitychange', syncVisibility);
+    window.addEventListener('blur', hideProtectedContent);
+    window.addEventListener('focus', revealProtectedContent);
+
+    return () => {
+      document.removeEventListener('visibilitychange', syncVisibility);
+      window.removeEventListener('blur', hideProtectedContent);
+      window.removeEventListener('focus', revealProtectedContent);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isVisibilitySensitiveState) {
+      setIsWindowHidden(false);
+    }
+  }, [isVisibilitySensitiveState]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return undefined;
+    }
+
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    if (mediaQuery.matches) {
+      setIsReducedMotion(true);
+    }
+
+    return undefined;
+  }, []);
 
   useEffect(() => {
     if (appState !== 'otp' && appState !== 'vote') {
@@ -344,6 +479,8 @@ export default function HomePage() {
   const currentStep = STEP_INDEX[appState];
   const showProgress = appState !== 'intro' && appState !== 'success';
   const guidance = STEP_GUIDANCE[appState];
+  const dataExplanation = DATA_EXPLANATION[appState];
+  const latencyMessage = getLatencyMessage(pendingOperation, latencyState);
 
   async function handleLoginSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -356,7 +493,7 @@ export default function HomePage() {
     setIsSubmitting(true);
 
     try {
-      const authenticatedUser = await verifyUserCredentials(rut, email);
+      const authenticatedUser = await runMeasuredRequest('login', () => verifyUserCredentials(rut, email));
       setUser(authenticatedUser);
       setOtpAttempts(0);
       setTransitionDirection('forward');
@@ -386,7 +523,7 @@ export default function HomePage() {
     setIsSubmitting(true);
 
     try {
-      await verifyOtpCode(otp);
+      await runMeasuredRequest('otp', () => verifyOtpCode(otp));
     } catch (error) {
       const nextAttempts = otpAttempts + 1;
       if (nextAttempts >= MAX_OTP_ATTEMPTS) {
@@ -406,7 +543,7 @@ export default function HomePage() {
     setIsLoadingCandidates(true);
 
     try {
-      const availableCandidates = await getCandidates();
+      const availableCandidates = await runMeasuredRequest('ballot', () => getCandidates());
       setCandidates(availableCandidates);
       setRemainingSeconds(VOTING_WINDOW_SECONDS);
       setSelectedCandidateId(null);
@@ -439,7 +576,7 @@ export default function HomePage() {
     setIsSubmitting(true);
 
     try {
-      const result = await submitVote(selectedCandidateId);
+      const result = await runMeasuredRequest('vote', () => submitVote(selectedCandidateId));
       setReceiptCode(result.receiptCode);
       setReceiptIssuedAt(new Date().toISOString());
       setConfirmedCandidateName(result.candidate.name);
@@ -476,136 +613,171 @@ export default function HomePage() {
     idleResetRef.current();
   }
 
+  function handleRevealProtectedView() {
+    if (!document.hidden) {
+      setIsWindowHidden(false);
+    }
+  }
+
   return (
-    <main className={`portal-shell relative min-h-screen overflow-hidden isolate font-serif ${isHighContrast ? 'portal-contrast-high' : ''} ${isSimplifiedMode ? 'portal-simplified-mode' : ''}`}>
+    <main className={`portal-shell relative min-h-screen overflow-hidden isolate font-serif ${isHighContrast ? 'portal-contrast-high' : ''} ${isSimplifiedMode ? 'portal-simplified-mode' : ''} ${isReducedMotion ? 'portal-reduced-motion' : ''} ${fontScale === 'small' ? 'portal-font-small' : ''} ${fontScale === 'large' ? 'portal-font-large' : ''}`}>
       <div className="absolute inset-0 bg-portal" />
       <div className="absolute inset-0 bg-gradient-to-br from-[#062048]/85 via-[#082a54]/70 to-[#061836]/82" />
 
+      <AccessibilityPanel
+        isOpen={isAccessibilityPanelOpen}
+        isHighContrast={isHighContrast}
+        isPrivacyMode={isPrivacyMode}
+        isSimplifiedMode={isSimplifiedMode}
+        isReducedMotion={isReducedMotion}
+        fontScale={fontScale}
+        onToggleOpen={() => setIsAccessibilityPanelOpen((currentValue) => !currentValue)}
+        onHighContrastChange={setIsHighContrast}
+        onPrivacyModeChange={setIsPrivacyMode}
+        onSimplifiedModeChange={setIsSimplifiedMode}
+        onReducedMotionChange={setIsReducedMotion}
+        onFontScaleChange={setFontScale}
+      />
+
       <section className="relative z-10 grid place-items-center min-h-screen max-w-[1320px] mx-auto px-4 py-5">
-        <div className="w-full max-w-[920px] p-2.5 rounded-[20px] border border-white/20 bg-white/90 shadow-[0_24px_64px_rgba(6,18,38,0.36),0_4px_12px_rgba(6,18,38,0.14)] backdrop-blur-[22px] backdrop-saturate-150">
-          <div className="relative mb-2 px-[18px] py-4 rounded-2xl overflow-hidden border border-white/20 bg-[#082f5a]" style={{ background: 'linear-gradient(135deg, #061d3d 0%, #0a3566 50%, #0b5294 100%)' }}>
-            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_80%_0%,rgba(255,255,255,0.08),transparent_55%)] pointer-events-none" />
-            <div className="relative flex items-start justify-between gap-4">
-              <div className="flex items-center gap-4 min-w-0">
-                <svg className="shrink-0" width="40" height="46" viewBox="0 0 44 50" fill="none" aria-hidden="true">
-                  <path d="M22 2L4 10v14c0 12 8.5 22 18 26 9.5-4 18-14 18-26V10L22 2z" fill="rgba(255,255,255,0.15)" stroke="rgba(255,255,255,0.5)" strokeWidth="1.5" strokeLinejoin="round" />
-                  <path d="M22 9L11 14v9c0 7.5 5 13.5 11 16 6-2.5 11-8.5 11-16v-9L22 9z" fill="rgba(255,255,255,0.18)" stroke="rgba(255,255,255,0.35)" strokeWidth="1" strokeLinejoin="round" />
-                  <path d="M16 24l4 4 8-8" stroke="rgba(255,255,255,0.9)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-                <div className="min-w-0">
-                  <p className="m-0 mb-1 text-[10px] font-bold font-sans uppercase tracking-[0.16em] text-white/80">
-                    Servicio Local de Educacion Publica Colchagua
-                  </p>
-                  <h2 className="m-0 font-serif text-[clamp(17px,2.4vw,24px)] text-white leading-tight tracking-tight">
-                    Portal de votacion del Consejo Local
-                  </h2>
+        <div className="relative w-full max-w-[920px] p-2.5 rounded-[20px] border border-white/20 bg-white/90 shadow-[0_24px_64px_rgba(6,18,38,0.36),0_4px_12px_rgba(6,18,38,0.14)] backdrop-blur-[22px] backdrop-saturate-150">
+          <div className={`transition-[filter] duration-200 ${isWindowHidden ? 'portal-obscured-surface' : ''}`}>
+            <div className="relative z-20 mb-2 px-[18px] py-4 rounded-2xl overflow-visible border border-white/20 bg-[#082f5a]" style={{ background: 'linear-gradient(135deg, #061d3d 0%, #0a3566 50%, #0b5294 100%)' }}>
+              <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_80%_0%,rgba(255,255,255,0.08),transparent_55%)] pointer-events-none" />
+              <div className="relative flex items-start gap-4">
+                <div className="flex items-center gap-4 min-w-0">
+                  <svg className="shrink-0" width="40" height="46" viewBox="0 0 44 50" fill="none" aria-hidden="true">
+                    <path d="M22 2L4 10v14c0 12 8.5 22 18 26 9.5-4 18-14 18-26V10L22 2z" fill="rgba(255,255,255,0.15)" stroke="rgba(255,255,255,0.5)" strokeWidth="1.5" strokeLinejoin="round" />
+                    <path d="M22 9L11 14v9c0 7.5 5 13.5 11 16 6-2.5 11-8.5 11-16v-9L22 9z" fill="rgba(255,255,255,0.18)" stroke="rgba(255,255,255,0.35)" strokeWidth="1" strokeLinejoin="round" />
+                    <path d="M16 24l4 4 8-8" stroke="rgba(255,255,255,0.9)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                  <div className="min-w-0">
+                    <p className="m-0 mb-1 text-[10px] font-bold font-sans uppercase tracking-[0.16em] text-white/80">
+                      Servicio Local de Educacion Publica Colchagua
+                    </p>
+                    <h2 className="m-0 font-serif text-[clamp(17px,2.4vw,24px)] text-white leading-tight tracking-tight">
+                      Portal de votacion del Consejo Local
+                    </h2>
+                  </div>
                 </div>
               </div>
 
-              <button
-                type="button"
-                className="shrink-0 rounded-full border border-white/18 bg-white/10 px-3 py-1.5 text-[10px] font-bold font-sans uppercase tracking-[0.14em] text-white transition hover:bg-white/18 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/20"
-                onClick={() => setIsHighContrast((currentValue) => !currentValue)}
-              >
-                {isHighContrast ? 'Contraste alto activo' : 'Activar contraste alto'}
-              </button>
-            </div>
-
-            <div className="relative mt-3 flex flex-wrap items-center gap-2">
-              <span className="inline-flex px-2.5 py-1 rounded-full text-[10px] font-bold font-sans uppercase tracking-wide border border-white/18 bg-white/10 text-white/92">
-                {isDemoMode ? 'Simulacion guiada' : 'Flujo institucional guiado'}
-              </span>
-              <span className="inline-flex px-2.5 py-1 rounded-full text-[10px] font-bold font-sans uppercase tracking-wide border border-emerald-300/35 bg-emerald-400/10 text-white">
-                Sesion segura verificada
-              </span>
-              <span className="inline-flex px-2.5 py-1 rounded-full text-[10px] font-bold font-sans uppercase tracking-wide border border-white/16 bg-white/8 text-white/78">
-                Una sola pestaña por votante
-              </span>
-              {isPrivacyMode ? (
-                <span className="inline-flex px-2.5 py-1 rounded-full text-[10px] font-bold font-sans uppercase tracking-wide border border-white/16 bg-white/8 text-white/78">
-                  Datos visibles reducidos
+              <div className="relative mt-3 flex flex-wrap items-center gap-2">
+                <span className="inline-flex px-2.5 py-1 rounded-full text-[10px] font-bold font-sans uppercase tracking-wide border border-white/18 bg-white/10 text-white/92">
+                  {isDemoMode ? 'Simulacion guiada' : 'Flujo institucional guiado'}
                 </span>
-              ) : null}
-            </div>
-          </div>
-
-          {showProgress ? <StepProgress currentStep={currentStep} /> : null}
-
-          {guidance ? (
-            <div className="mx-1 mb-2 rounded-2xl border border-slate-900/[0.08] bg-slate-50 px-4 py-3">
-              <p className="m-0 text-[11px] font-bold font-sans uppercase tracking-[0.14em] text-[#1c3d5c]">
-                Paso actual: {guidance.current}
-              </p>
-              <p className="mt-1.5 mb-0 text-[13px] font-sans leading-relaxed text-[#4e6a85]">
-                Siguiente accion: {guidance.next}
-              </p>
-            </div>
-          ) : null}
-
-          {showMultiTabWarning ? (
-            <div className="mx-1 mb-2 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="m-0 text-[11px] font-bold font-sans uppercase tracking-[0.14em] text-amber-800">
-                    Otra pestaña detectada
-                  </p>
-                  <p className="mt-1.5 mb-0 text-[13px] font-sans leading-relaxed text-amber-900/85">
-                    Para evitar confusiones en la jornada, completa este flujo en una sola pestaña y cierra las demas ventanas del portal.
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  className="shrink-0 rounded-full border border-amber-300 bg-white px-3 py-1.5 text-[10px] font-bold font-sans uppercase tracking-wide text-amber-800 transition hover:bg-amber-100 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-amber-200"
-                  onClick={() => setShowMultiTabWarning(false)}
-                >
-                  Entendido
-                </button>
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold font-sans uppercase tracking-wide border border-emerald-300/35 bg-emerald-400/10 text-white">
+                  Sesion segura verificada
+                  <HelpTooltip
+                    title="Sesion segura verificada"
+                    description="La interfaz protege el flujo con una sola pestaña activa, ocultamiento opcional de datos, expiracion por inactividad y guardas visuales de estado. No reemplaza los controles del backend real que definira cada SLEP."
+                    align="left"
+                  />
+                </span>
+                <span className="inline-flex px-2.5 py-1 rounded-full text-[10px] font-bold font-sans uppercase tracking-wide border border-white/16 bg-white/8 text-white/78">
+                  Una sola pestaña por votante
+                </span>
+                {isPrivacyMode ? (
+                  <span className="inline-flex px-2.5 py-1 rounded-full text-[10px] font-bold font-sans uppercase tracking-wide border border-white/16 bg-white/8 text-white/78">
+                    Datos visibles reducidos
+                  </span>
+                ) : null}
               </div>
             </div>
-          ) : null}
 
-          {idleWarningSeconds !== null ? (
-            <div className="mx-1 mb-2 rounded-2xl border border-red-200 bg-red-50 px-4 py-3">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <p className="m-0 text-[11px] font-bold font-sans uppercase tracking-[0.14em] text-red-700">
-                    Sesion por inactividad a punto de expirar
-                  </p>
-                  <p className="mt-1.5 mb-0 text-[13px] font-sans leading-relaxed text-red-900/85">
-                    Quedan {formatShortTimer(idleWarningSeconds)} para mantener la sesion activa en esta pantalla.
-                  </p>
-                </div>
-                <div className="flex flex-wrap gap-2">
+            {showProgress ? <StepProgress currentStep={currentStep} /> : null}
+
+            {guidance ? (
+              <div className="mx-1 mb-2 rounded-2xl border border-slate-900/[0.08] bg-slate-50 px-4 py-3">
+                <p className="m-0 text-[11px] font-bold font-sans uppercase tracking-[0.14em] text-[#1c3d5c]">
+                  Paso actual: {guidance.current}
+                </p>
+                <p className="mt-1.5 mb-0 text-[13px] font-sans leading-relaxed text-[#4e6a85]">
+                  Siguiente accion: {guidance.next}
+                </p>
+              </div>
+            ) : null}
+
+            {dataExplanation ? (
+              <div className="mx-1 mb-2 rounded-2xl border border-[#0b5294]/10 bg-[#0b5294]/[0.04] px-4 py-3">
+                <p className="m-0 text-[11px] font-bold font-sans uppercase tracking-[0.14em] text-[#1c3d5c]">
+                  {dataExplanation.title}
+                </p>
+                <p className="mt-1.5 mb-0 text-[13px] font-sans leading-relaxed text-[#4e6a85]">
+                  {dataExplanation.detail}
+                </p>
+              </div>
+            ) : null}
+
+            {latencyMessage ? (
+              <div className={`mx-1 mb-2 rounded-2xl px-4 py-3 ${latencyState === 'very-slow' ? 'border border-amber-200 bg-amber-50' : 'border border-sky-200 bg-sky-50'}`}>
+                <p className={`m-0 text-[11px] font-bold font-sans uppercase tracking-[0.14em] ${latencyState === 'very-slow' ? 'text-amber-800' : 'text-sky-800'}`}>
+                  {latencyState === 'very-slow' ? 'Conexion lenta detectada' : 'Esperando respuesta'}
+                </p>
+                <p className={`mt-1.5 mb-0 text-[13px] font-sans leading-relaxed ${latencyState === 'very-slow' ? 'text-amber-900/85' : 'text-sky-900/85'}`}>
+                  {latencyMessage}
+                </p>
+              </div>
+            ) : null}
+
+            {showMultiTabWarning ? (
+              <div className="mx-1 mb-2 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="m-0 text-[11px] font-bold font-sans uppercase tracking-[0.14em] text-amber-800">
+                      Otra pestaña detectada
+                    </p>
+                    <p className="mt-1.5 mb-0 text-[13px] font-sans leading-relaxed text-amber-900/85">
+                      Para evitar confusiones en la jornada, completa este flujo en una sola pestaña y cierra las demas ventanas del portal.
+                    </p>
+                  </div>
                   <button
                     type="button"
-                    className="rounded-xl border border-red-200 bg-white px-4 py-2 text-[12px] font-bold font-sans text-red-700 transition hover:bg-red-100 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-red-100"
-                    onClick={handleKeepSessionActive}
+                    className="shrink-0 rounded-full border border-amber-300 bg-white px-3 py-1.5 text-[10px] font-bold font-sans uppercase tracking-wide text-amber-800 transition hover:bg-amber-100 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-amber-200"
+                    onClick={() => setShowMultiTabWarning(false)}
                   >
-                    Seguir aqui
-                  </button>
-                  <button
-                    type="button"
-                    className="rounded-xl border border-red-200 bg-red-600 px-4 py-2 text-[12px] font-bold font-sans text-white transition hover:bg-red-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-red-100"
-                    onClick={handleRestart}
-                  >
-                    Reiniciar flujo
+                    Entendido
                   </button>
                 </div>
               </div>
-            </div>
-          ) : null}
+            ) : null}
 
-          <div key={appState} className={transitionDirection === 'forward' ? 'view-enter-forward' : 'view-enter-back'}>
+            {idleWarningSeconds !== null ? (
+              <div className="mx-1 mb-2 rounded-2xl border border-red-200 bg-red-50 px-4 py-3">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <p className="m-0 text-[11px] font-bold font-sans uppercase tracking-[0.14em] text-red-700">
+                      Sesion por inactividad a punto de expirar
+                    </p>
+                    <p className="mt-1.5 mb-0 text-[13px] font-sans leading-relaxed text-red-900/85">
+                      Quedan {formatShortTimer(idleWarningSeconds)} para mantener la sesion activa en esta pantalla.
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      className="rounded-xl border border-red-200 bg-white px-4 py-2 text-[12px] font-bold font-sans text-red-700 transition hover:bg-red-100 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-red-100"
+                      onClick={handleKeepSessionActive}
+                    >
+                      Seguir aqui
+                    </button>
+                    <button
+                      type="button"
+                      className="rounded-xl border border-red-200 bg-red-600 px-4 py-2 text-[12px] font-bold font-sans text-white transition hover:bg-red-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-red-100"
+                      onClick={handleRestart}
+                    >
+                      Reiniciar flujo
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : null}
+
+            <div key={appState} className={transitionDirection === 'forward' ? 'view-enter-forward' : 'view-enter-back'}>
             {appState === 'intro' ? (
               <IntroView
                 isDemoMode={isDemoMode}
-                isHighContrast={isHighContrast}
-                isPrivacyMode={isPrivacyMode}
-                isSimplifiedMode={isSimplifiedMode}
                 onDemoModeChange={setIsDemoMode}
-                onHighContrastChange={setIsHighContrast}
-                onPrivacyModeChange={setIsPrivacyMode}
-                onSimplifiedModeChange={setIsSimplifiedMode}
                 onStart={handleStartFlow}
               />
             ) : null}
@@ -633,6 +805,7 @@ export default function HomePage() {
                 otp={otp}
                 isPrivacyMode={isPrivacyMode}
                 isSimplifiedMode={isSimplifiedMode}
+                isScreenObscured={isWindowHidden}
                 isSubmitting={isSubmitting}
                 isLocked={isOtpLocked}
                 errorMessage={errorMessage}
@@ -682,6 +855,7 @@ export default function HomePage() {
                   isDemoMode={isDemoMode}
                   isPrivacyMode={isPrivacyMode}
                   isSimplifiedMode={isSimplifiedMode}
+                  isScreenObscured={isWindowHidden}
                   selectedCandidateId={selectedCandidateId}
                   remainingSeconds={remainingSeconds}
                   hasExpired={hasExpired}
@@ -709,7 +883,30 @@ export default function HomePage() {
             ) : null}
           </div>
 
-          <SupportStrip />
+            <SupportStrip />
+          </div>
+
+          {isWindowHidden && isVisibilitySensitiveState ? (
+            <div className="screen-shield" role="dialog" aria-modal="true" aria-labelledby="screen-shield-title" aria-describedby="screen-shield-description">
+              <div className="screen-shield-panel">
+                <span className="screen-shield-badge">Privacidad activa</span>
+                <h2 id="screen-shield-title" className="m-0 font-serif text-[22px] text-[#0c2138] leading-tight">
+                  Pantalla protegida mientras esta pestaña no estuvo activa
+                </h2>
+                <p id="screen-shield-description" className="m-0 text-[14px] font-sans leading-relaxed text-[#4e6a85]">
+                  Para reducir exposicion visual, ocultamos temporalmente nombre, correo enmascarado y padron durante OTP o votacion.
+                </p>
+                <button
+                  type="button"
+                  className="inline-flex items-center justify-center h-11 px-5 rounded-xl bg-[#0b5294] text-white font-sans text-sm font-bold tracking-wide shadow-[0_4px_14px_rgba(11,82,148,0.40)] hover:bg-[#0a4278] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#0b5294]/20"
+                  onClick={handleRevealProtectedView}
+                  disabled={typeof document !== 'undefined' ? document.hidden : false}
+                >
+                  Mostrar contenido otra vez
+                </button>
+              </div>
+            </div>
+          ) : null}
         </div>
 
         <footer className="mt-4 px-4 text-center">

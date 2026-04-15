@@ -238,7 +238,7 @@
 .help-tooltip {
   position: absolute;
   top: calc(100% + 10px);
-  z-index: 30;
+  z-index: 120;
   width: min(280px, calc(100vw - 48px));
   padding: 12px 14px;
   border-radius: 16px;
@@ -417,6 +417,162 @@
   background: color-mix(in srgb, var(--accent) 18%, white) !important;
   color: color-mix(in srgb, var(--accent) 78%, black) !important;
   box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--accent) 72%, white);
+}
+
+.a11y-fab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 54px;
+  height: 54px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(8, 47, 90, 0.92);
+  color: white;
+  border-radius: 9999px;
+  padding: 0;
+  box-shadow: 0 14px 28px rgba(6, 18, 38, 0.24);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease;
+}
+
+.a11y-fab:hover,
+.a11y-fab:focus-visible {
+  transform: translateY(-1px);
+  box-shadow: 0 16px 34px rgba(6, 18, 38, 0.3);
+  background: rgba(10, 66, 120, 0.96);
+  outline: none;
+}
+
+.a11y-icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 16px;
+  border: 1px solid rgba(12, 33, 56, 0.12);
+  background: white;
+  color: #1c3d5c;
+  transition: transform 0.16s ease, border-color 0.16s ease, background-color 0.16s ease, color 0.16s ease;
+}
+
+.a11y-icon-button:hover,
+.a11y-icon-button:focus-visible {
+  transform: translateY(-1px);
+  border-color: rgba(11, 82, 148, 0.3);
+  color: #0b5294;
+  outline: none;
+}
+
+.a11y-icon-button-active {
+  background: #0b5294;
+  border-color: #0b5294;
+  color: white;
+  box-shadow: 0 10px 22px rgba(11, 82, 148, 0.22);
+}
+
+.a11y-fab-label {
+  display: none;
+}
+
+.portal-obscured-surface {
+  filter: blur(7px) saturate(0.8);
+  user-select: none;
+}
+
+.screen-shield {
+  position: absolute;
+  inset: 0;
+  z-index: 35;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+}
+
+.screen-shield-panel {
+  width: min(460px, 100%);
+  display: grid;
+  gap: 14px;
+  padding: 24px;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.98);
+  border: 1px solid rgba(12, 33, 56, 0.12);
+  box-shadow: 0 24px 64px rgba(6, 18, 38, 0.24), 0 4px 12px rgba(6, 18, 38, 0.12);
+  text-align: center;
+}
+
+.screen-shield-badge {
+  display: inline-flex;
+  justify-self: center;
+  padding: 7px 12px;
+  border-radius: 9999px;
+  background: rgba(11, 82, 148, 0.08);
+  color: #0b5294;
+  border: 1px solid rgba(11, 82, 148, 0.16);
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+}
+
+.sensitive-blur {
+  filter: blur(6px);
+  transition: filter 0.18s ease;
+}
+
+.sensitive-panel-blur {
+  filter: blur(8px);
+  transition: filter 0.18s ease;
+}
+
+.portal-font-small p,
+.portal-font-small li,
+.portal-font-small label,
+.portal-font-small input,
+.portal-font-small textarea,
+.portal-font-small button[type='submit'],
+.portal-font-small button[type='button']:not(.a11y-fab):not(.help-trigger),
+.portal-font-small code {
+  font-size: 0.97em !important;
+}
+
+.portal-font-small p,
+.portal-font-small li,
+.portal-font-small label {
+  line-height: 1.58 !important;
+}
+
+.portal-font-large p,
+.portal-font-large li,
+.portal-font-large label,
+.portal-font-large input,
+.portal-font-large textarea,
+.portal-font-large button[type='submit'],
+.portal-font-large button[type='button']:not(.a11y-fab):not(.help-trigger),
+.portal-font-large code {
+  font-size: 1.04em !important;
+}
+
+.portal-font-large p,
+.portal-font-large li,
+.portal-font-large label {
+  line-height: 1.74 !important;
+}
+
+.portal-reduced-motion *,
+.portal-reduced-motion *::before,
+.portal-reduced-motion *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+@media (max-width: 768px) {
+  .a11y-fab {
+    width: 50px;
+    height: 50px;
+  }
 }
 
 .portal-contrast-high .skeleton {
