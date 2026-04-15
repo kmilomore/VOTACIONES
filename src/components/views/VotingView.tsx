@@ -105,7 +105,7 @@ export function VotingView({
             <button
               key={candidate.id}
               type="button"
-              className={`grid gap-2 p-3.5 text-left rounded-2xl border transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40 ${
+              className={`grid gap-2 p-3.5 text-left rounded-2xl border transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0b5294]/40 ${
                 isSelected
                   ? 'candidate-selected bg-gradient-to-b from-white to-slate-50/80'
                   : 'border-slate-900/[0.1] bg-gradient-to-b from-white to-slate-50/80 hover:-translate-y-0.5 hover:shadow-lg hover:border-slate-900/20'
@@ -146,7 +146,7 @@ export function VotingView({
 
       <div className="flex justify-end mt-3">
         <button
-          className="inline-flex items-center justify-center h-11 px-6 rounded-xl bg-brand text-white font-sans text-sm font-bold tracking-wide shadow-[0_4px_14px_rgba(11,66,120,0.36),inset_0_1px_0_rgba(255,255,255,0.12)] hover:bg-brand-mid hover:-translate-y-px active:translate-y-0 disabled:opacity-45 disabled:cursor-not-allowed transition-all duration-150"
+          className="inline-flex items-center justify-center h-11 px-6 rounded-xl bg-[#0b5294] text-white font-sans text-sm font-bold tracking-wide shadow-[0_4px_14px_rgba(11,82,148,0.40),inset_0_1px_0_rgba(255,255,255,0.12)] hover:bg-[#0a4278] hover:-translate-y-px active:translate-y-0 disabled:opacity-45 disabled:cursor-not-allowed transition-all duration-150"
           type="button"
           onClick={handleConfirmClick}
           disabled={hasExpired || isSubmitting || !selectedCandidateId}
@@ -187,7 +187,7 @@ export function VotingView({
               </div>
               <div className="flex gap-2.5">
                 <button
-                  className="flex-1 inline-flex items-center justify-center h-11 px-4 rounded-xl bg-white text-ink-mid font-sans text-sm font-bold border-[1.5px] border-slate-900/[0.14] hover:bg-slate-50 transition-all duration-150 disabled:opacity-45"
+                  className="flex-1 inline-flex items-center justify-center h-11 px-4 rounded-xl bg-white text-[#1c3d5c] font-sans text-sm font-bold border-[1.5px] border-slate-900/[0.14] hover:bg-slate-50 transition-all duration-150 disabled:opacity-45"
                   type="button"
                   onClick={() => setShowConfirmModal(false)}
                   disabled={isSubmitting}
@@ -195,7 +195,7 @@ export function VotingView({
                   Cancelar
                 </button>
                 <button
-                  className="flex-1 inline-flex items-center justify-center h-11 px-5 rounded-xl bg-brand text-white font-sans text-sm font-bold tracking-wide shadow-[0_4px_14px_rgba(11,66,120,0.36)] hover:bg-brand-mid transition-all duration-150 disabled:opacity-45 disabled:cursor-not-allowed"
+                  className="flex-1 inline-flex items-center justify-center h-11 px-5 rounded-xl bg-[#0b5294] text-white font-sans text-sm font-bold tracking-wide shadow-[0_4px_14px_rgba(11,82,148,0.40)] hover:bg-[#0a4278] transition-all duration-150 disabled:opacity-45 disabled:cursor-not-allowed"
                   type="button"
                   onClick={() => { setShowConfirmModal(false); onSubmitVote(); }}
                   disabled={isSubmitting}

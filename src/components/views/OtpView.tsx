@@ -29,7 +29,7 @@ interface OtpViewProps {
 }
 
 const digitClass =
-  'w-full h-12 rounded-xl border-[1.5px] border-slate-900/[0.14] bg-white text-ink text-[22px] font-bold text-center tabular-nums font-sans transition-all duration-150 focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/15 disabled:opacity-50';
+  'w-full h-12 rounded-xl border-[1.5px] border-slate-900/[0.14] bg-white text-[#0c2138] text-[22px] font-bold text-center tabular-nums font-sans transition-all duration-150 focus:outline-none focus:border-[#0b5294] focus:ring-2 focus:ring-[#0b5294]/15 disabled:opacity-50';
 
 export function OtpView({
   email,
@@ -119,7 +119,7 @@ export function OtpView({
 
       <form className="grid gap-3.5" onSubmit={onSubmit}>
         <div className="grid gap-2">
-          <span className="text-[11px] font-bold font-sans text-ink-mid uppercase tracking-wide">
+          <span className="text-[11px] font-bold font-sans text-[#1c3d5c] uppercase tracking-wide">
             Codigo de 6 digitos
           </span>
           <div className="grid grid-cols-6 gap-2">
@@ -153,7 +153,7 @@ export function OtpView({
 
         <div className="flex gap-2.5">
           <button
-            className="inline-flex items-center justify-center h-11 px-4 rounded-xl bg-white text-ink-mid font-sans text-sm font-bold border-[1.5px] border-slate-900/[0.14] shadow-sm hover:bg-slate-50 hover:-translate-y-px active:translate-y-0 disabled:opacity-45 disabled:cursor-not-allowed transition-all duration-150"
+            className="inline-flex items-center justify-center h-11 px-4 rounded-xl bg-white text-[#1c3d5c] font-sans text-sm font-bold border-[1.5px] border-slate-900/[0.14] shadow-sm hover:bg-slate-50 hover:-translate-y-px active:translate-y-0 disabled:opacity-45 disabled:cursor-not-allowed transition-all duration-150"
             type="button"
             onClick={onBack}
             disabled={isSubmitting || isLocked}
@@ -161,7 +161,7 @@ export function OtpView({
             ← Volver
           </button>
           <button
-            className="flex-1 inline-flex items-center justify-center h-11 px-5 rounded-xl bg-brand text-white font-sans text-sm font-bold tracking-wide shadow-[0_4px_14px_rgba(11,66,120,0.36),inset_0_1px_0_rgba(255,255,255,0.12)] hover:bg-brand-mid hover:-translate-y-px active:translate-y-0 disabled:opacity-45 disabled:cursor-not-allowed transition-all duration-150"
+            className="flex-1 inline-flex items-center justify-center h-11 px-5 rounded-xl bg-[#0b5294] text-white font-sans text-sm font-bold tracking-wide shadow-[0_4px_14px_rgba(11,82,148,0.40),inset_0_1px_0_rgba(255,255,255,0.12)] hover:bg-[#0a4278] hover:-translate-y-px active:translate-y-0 disabled:opacity-45 disabled:cursor-not-allowed transition-all duration-150"
             type="submit"
             disabled={isSubmitting || isLocked || !isComplete}
           >

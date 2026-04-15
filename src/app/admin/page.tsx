@@ -138,13 +138,14 @@ export default function AdminPage() {
     return (
       <div
         className="min-h-screen flex items-center justify-center px-4"
-        style={{ backgroundColor: 'var(--brand-blue-deep)' }}
+        className="min-h-screen flex items-center justify-center px-4 bg-[#082f5a]"
+        style={{ backgroundImage: 'linear-gradient(135deg, #061d3d 0%, #0a3566 52%, #0b5294 100%)' }}
       >
         <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-8">
           <div className="text-center mb-8">
             <div
               className="mx-auto mb-4 w-14 h-14 rounded-full flex items-center justify-center"
-              style={{ backgroundColor: 'var(--brand-blue)' }}
+              style={{ backgroundColor: '#0b5294' }}
             >
               <svg
                 width="28"
@@ -163,11 +164,11 @@ export default function AdminPage() {
             </div>
             <h1
               className="text-xl font-bold"
-              style={{ color: 'var(--text-dark)', fontFamily: 'Cambria, Georgia, serif' }}
+              style={{ color: '#0c2138', fontFamily: 'Cambria, Georgia, serif' }}
             >
               Panel Administrativo
             </h1>
-            <p className="text-sm mt-1" style={{ color: 'var(--muted-dark)' }}>
+            <p className="text-sm mt-1" style={{ color: '#5b6b7f' }}>
               Métricas en tiempo real · SLEP Santiago Centro
             </p>
           </div>
@@ -177,7 +178,7 @@ export default function AdminPage() {
               <label
                 htmlFor="admin-pin"
                 className="block text-sm font-semibold mb-1.5"
-                style={{ color: 'var(--text-dark)' }}
+                style={{ color: '#0c2138' }}
               >
                 PIN de acceso
               </label>
@@ -193,7 +194,7 @@ export default function AdminPage() {
                 className="w-full border rounded-lg px-4 py-2.5 text-base outline-none transition-shadow focus:ring-2"
                 style={{
                   borderColor: authError ? '#e02a3b' : '#d1d5db',
-                  color: 'var(--text-dark)',
+                  color: '#0c2138',
                 }}
                 placeholder="Ingresa el PIN"
                 aria-describedby={authError ? 'auth-error' : undefined}
@@ -215,7 +216,7 @@ export default function AdminPage() {
               type="submit"
               disabled={authLoading || pin.trim().length === 0}
               className="w-full py-2.5 rounded-lg font-semibold text-white transition-opacity disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              style={{ backgroundColor: 'var(--brand-blue)' }}
+              style={{ backgroundColor: '#0b5294' }}
             >
               {authLoading && (
                 <svg

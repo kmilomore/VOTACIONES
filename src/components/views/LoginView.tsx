@@ -19,9 +19,9 @@ function formatRutNumber(raw: string): string {
 }
 
 const inputClass =
-  'w-full h-11 px-3.5 rounded-xl border-[1.5px] border-slate-900/[0.14] bg-white text-ink font-sans text-[15px] transition-all duration-150 focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/15 placeholder:text-ink-muted/50';
+  'w-full h-11 px-3.5 rounded-xl border-[1.5px] border-slate-900/[0.14] bg-white text-[#0c2138] font-sans text-[15px] transition-all duration-150 focus:outline-none focus:border-[#0b5294] focus:ring-2 focus:ring-[#0b5294]/15 placeholder:text-slate-400/70';
 
-const labelClass = 'text-[11px] font-bold font-sans text-ink-mid uppercase tracking-wide';
+const labelClass = 'text-[11px] font-bold font-sans text-[#1c3d5c] uppercase tracking-wide';
 
 interface LoginViewProps {
   rutNumber: string;
@@ -51,12 +51,12 @@ export function LoginView({
   const rutStatus = validateRut(rutNumber, rutVerifier);
 
   return (
-    <section className="rounded-2xl bg-white/95 backdrop-blur-sm border border-slate-900/10 text-ink p-5">
+    <section className="rounded-2xl bg-white/95 backdrop-blur-sm border border-slate-900/10 text-[#0c2138] p-5">
       <div className="mb-4 pb-4 border-b border-slate-900/[0.08]">
-        <h1 className="mt-0 mb-0 font-serif text-[clamp(20px,2.6vw,28px)] text-ink leading-none tracking-tight">
+        <h1 className="mt-0 mb-0 font-serif text-[clamp(20px,2.6vw,28px)] text-[#0c2138] leading-none tracking-tight">
           Ingresa para votar
         </h1>
-        <p className="mt-2 mb-0 text-sm text-ink-muted font-sans leading-relaxed">
+        <p className="mt-2 mb-0 text-sm text-slate-500 font-sans leading-relaxed">
           Ingresa tu RUT y correo institucional registrado en el padron del Consejo Local.
         </p>
 
@@ -141,7 +141,7 @@ export function LoginView({
         ) : null}
 
         <button
-          className="inline-flex items-center justify-center w-full h-11 px-5 rounded-xl bg-brand text-white font-sans text-sm font-bold tracking-wide shadow-[0_4px_14px_rgba(11,66,120,0.36),inset_0_1px_0_rgba(255,255,255,0.12)] hover:bg-brand-mid hover:shadow-[0_6px_20px_rgba(11,66,120,0.44)] hover:-translate-y-px active:translate-y-0 disabled:opacity-45 disabled:cursor-not-allowed transition-all duration-150"
+          className="inline-flex items-center justify-center w-full h-11 px-5 rounded-xl bg-[#0b5294] text-white font-sans text-sm font-bold tracking-wide shadow-[0_4px_14px_rgba(11,82,148,0.40),inset_0_1px_0_rgba(255,255,255,0.12)] hover:bg-[#0a4278] hover:shadow-[0_6px_20px_rgba(11,82,148,0.48)] hover:-translate-y-px active:translate-y-0 disabled:opacity-45 disabled:cursor-not-allowed transition-all duration-150"
           type="submit"
           disabled={isSubmitting || isLocked}
         >

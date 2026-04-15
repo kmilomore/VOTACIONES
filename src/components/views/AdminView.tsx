@@ -49,7 +49,7 @@ function SummaryCard({
       <span className="text-xs font-semibold uppercase tracking-widest text-gray-600">{label}</span>
       <span
         className="text-3xl font-bold leading-none"
-        style={{ color: accent ?? 'var(--brand-blue)' }}
+        style={{ color: accent ?? '#0b5294' }}
       >
         {value}
       </span>
@@ -377,7 +377,7 @@ export function AdminView({ metrics, auditLog, refreshing, onRefresh, onLogout }
   return (
     <div className="min-h-screen bg-gray-50">
       {/* ── Top nav ───────────────────────────────────────────────────── */}
-      <header style={{ backgroundColor: 'var(--brand-blue-deep)' }} className="text-white">
+      <header className="text-white bg-[#082f5a]" style={{ backgroundImage: 'linear-gradient(135deg, #061d3d 0%, #0a3566 52%, #0b5294 100%)' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             {/* Institutional shield */}
@@ -407,10 +407,10 @@ export function AdminView({ metrics, auditLog, refreshing, onRefresh, onLogout }
               <rect x="16" y="28" width="16" height="2.5" rx="1.25" fill="white" />
             </svg>
             <div>
-              <p className="text-xs font-semibold uppercase tracking-widest text-blue-200">
+              <p className="text-xs font-semibold uppercase tracking-widest text-blue-100/85">
                 SLEP COLCHAGUA
               </p>
-              <h1 className="text-xl font-bold leading-tight">
+              <h1 className="text-xl font-bold leading-tight text-white">
                 Panel de Métricas
               </h1>
             </div>
@@ -418,7 +418,7 @@ export function AdminView({ metrics, auditLog, refreshing, onRefresh, onLogout }
 
           <div className="flex items-center gap-3">
             {/* Live indicator */}
-            <div className="flex items-center gap-1.5 text-xs text-blue-200">
+            <div className="flex items-center gap-1.5 text-xs text-blue-50/90">
               <span
                 className={`w-2 h-2 rounded-full ${
                   refreshing ? 'bg-amber-400 animate-pulse' : 'bg-green-400'
@@ -429,7 +429,7 @@ export function AdminView({ metrics, auditLog, refreshing, onRefresh, onLogout }
             <button
               onClick={onRefresh}
               disabled={refreshing}
-              className="flex items-center gap-1.5 text-xs font-semibold bg-white/10 hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed text-white px-3 py-1.5 rounded-lg transition-colors"
+              className="flex items-center gap-1.5 text-xs font-semibold bg-white/14 hover:bg-white/22 disabled:opacity-50 disabled:cursor-not-allowed text-white px-3 py-1.5 rounded-lg border border-white/15 transition-colors"
             >
               <svg
                 className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`}
@@ -467,7 +467,7 @@ export function AdminView({ metrics, auditLog, refreshing, onRefresh, onLogout }
             label="Padrón total"
             value={metrics.padron.total}
             sub="votantes inscritos"
-            accent="var(--brand-blue)"
+            accent="#0b5294"
           />
           <SummaryCard
             label="Votos emitidos"
@@ -491,7 +491,7 @@ export function AdminView({ metrics, auditLog, refreshing, onRefresh, onLogout }
             label="Establecimientos"
             value={`${activeSchools} / ${metrics.schools.length}`}
             sub="con al menos un voto"
-            accent={activeSchools > 0 ? 'var(--brand-blue)' : '#6b7280'}
+            accent={activeSchools > 0 ? '#0b5294' : '#6b7280'}
           />
         </div>
 
@@ -508,7 +508,7 @@ export function AdminView({ metrics, auditLog, refreshing, onRefresh, onLogout }
           <ProgressBar
             value={metrics.votes.total}
             max={metrics.padron.total}
-            color="var(--brand-blue)"
+            color="#0b5294"
             height={18}
           />
           {/* Per-estamento mini breakdown below */}
@@ -549,7 +549,7 @@ export function AdminView({ metrics, auditLog, refreshing, onRefresh, onLogout }
         <footer className="text-center text-xs text-gray-500 pb-6">
           Datos actualizados automáticamente cada 8 segundos ·{' '}
           <span className="text-gray-700 font-medium">
-            Elección del Consejo Local — SLEP Santiago Centro
+            Elección del Consejo Local — SLEP COLCHAGUA
           </span>
         </footer>
       </main>

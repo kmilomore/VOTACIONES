@@ -227,21 +227,21 @@ export default function HomePage() {
         <div className="w-full max-w-[560px] p-2.5 rounded-[20px] border border-white/20 bg-white/90 shadow-[0_24px_64px_rgba(6,18,38,0.36),0_4px_12px_rgba(6,18,38,0.14)] backdrop-blur-[22px] backdrop-saturate-150">
 
           {/* Institutional intro band */}
-          <div className="relative mb-2 px-[18px] py-4 rounded-2xl overflow-hidden border border-white/10 bg-gradient-to-br from-brand-deep via-brand-mid to-brand">
-            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_80%_0%,rgba(255,255,255,0.06),transparent_55%)] pointer-events-none" />
+          <div className="relative mb-2 px-[18px] py-4 rounded-2xl overflow-hidden border border-white/20 bg-[#082f5a]" style={{background: 'linear-gradient(135deg, #061d3d 0%, #0a3566 50%, #0b5294 100%)'}}>
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_80%_0%,rgba(255,255,255,0.08),transparent_55%)] pointer-events-none" />
             <div className="relative flex items-center gap-4">
               {/* Escudo institucional */}
               <svg className="shrink-0" width="40" height="46" viewBox="0 0 44 50" fill="none" aria-hidden="true">
-                <path d="M22 2L4 10v14c0 12 8.5 22 18 26 9.5-4 18-14 18-26V10L22 2z" fill="rgba(255,255,255,0.1)" stroke="rgba(255,255,255,0.38)" strokeWidth="1.5" strokeLinejoin="round" />
-                <path d="M22 9L11 14v9c0 7.5 5 13.5 11 16 6-2.5 11-8.5 11-16v-9L22 9z" fill="rgba(255,255,255,0.14)" stroke="rgba(255,255,255,0.22)" strokeWidth="1" strokeLinejoin="round" />
-                <path d="M16 24l4 4 8-8" stroke="rgba(255,255,255,0.72)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M22 2L4 10v14c0 12 8.5 22 18 26 9.5-4 18-14 18-26V10L22 2z" fill="rgba(255,255,255,0.15)" stroke="rgba(255,255,255,0.5)" strokeWidth="1.5" strokeLinejoin="round" />
+                <path d="M22 9L11 14v9c0 7.5 5 13.5 11 16 6-2.5 11-8.5 11-16v-9L22 9z" fill="rgba(255,255,255,0.18)" stroke="rgba(255,255,255,0.35)" strokeWidth="1" strokeLinejoin="round" />
+                <path d="M16 24l4 4 8-8" stroke="rgba(255,255,255,0.9)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
               <div>
-                <p className="m-0 mb-1 text-[10px] font-bold font-sans uppercase tracking-[0.16em] text-[rgba(200,220,255,0.88)]">
+                <p className="m-0 mb-1 text-[10px] font-bold font-sans uppercase tracking-[0.16em] text-white/80">
                   Servicio Local de Educacion Publica Colchagua
                 </p>
                 <h2 className="m-0 font-serif text-[clamp(17px,2.4vw,24px)] text-white leading-tight tracking-tight">
-                  Portal de votacion del Consejo Local 
+                  Portal de votacion del Consejo Local
                 </h2>
               </div>
             </div>
@@ -258,10 +258,10 @@ export default function HomePage() {
                     <div className="flex flex-col items-center gap-1">
                       <div className={`w-6 h-6 rounded-full flex items-center justify-center transition-all duration-300 font-sans font-bold text-[11px] ${
                         done
-                          ? 'bg-brand text-white'
+                          ? 'bg-[#0b5294] text-white'
                           : active
-                          ? 'bg-brand text-white ring-[3px] ring-brand/20'
-                          : 'bg-slate-100 text-ink-muted'
+                          ? 'bg-[#0b5294] text-white ring-[3px] ring-[#0b5294]/20'
+                          : 'bg-slate-100 text-slate-500'
                       }`}>
                         {done ? (
                           <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
@@ -270,11 +270,11 @@ export default function HomePage() {
                         ) : (i + 1)}
                       </div>
                       <span className={`text-[9.5px] font-sans font-semibold whitespace-nowrap transition-colors ${
-                        done || active ? 'text-brand' : 'text-ink-muted'
+                        done || active ? 'text-[#0b5294] font-bold' : 'text-slate-400'
                       }`}>{label}</span>
                     </div>
                     {i < STEPS.length - 1 ? (
-                      <div className={`flex-1 h-px mt-3 mx-1.5 transition-all duration-500 ${done ? 'bg-brand' : 'bg-slate-200'}`} />
+                      <div className={`flex-1 h-px mt-3 mx-1.5 transition-all duration-500 ${done ? 'bg-[#0b5294]' : 'bg-slate-200'}`} />
                     ) : null}
                   </React.Fragment>
                 );
