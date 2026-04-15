@@ -4,8 +4,8 @@ import { headers } from 'next/headers';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Portal de Votacion | SLEP Santiago Centro',
-  description: 'Frontend modular del Portal de Votacion del Consejo Local para SLEP Santiago Centro.',
+  title: 'Portal de Votacion | SLEP COLCHAGUA',
+  description: 'Frontend modular del Portal de Votacion del Consejo Local para SLEP COLCHAGUA.',
   robots: { index: false, follow: false },
 };
 

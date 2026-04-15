@@ -4,6 +4,8 @@ interface MockUserRecord extends User {
   rut: string;
   email: string;
   otp: string;
+  /** ID matching a school in src/lib/schools-data.ts SCHOOLS array */
+  schoolId: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -21,6 +23,7 @@ const VALID_USERS: MockUserRecord[] = [
     fullName: 'Carlos Muñoz Reyes',
     organization: 'SLEP Santiago Centro',
     estamento: 'directivos',
+    schoolId: 'roberto-humeres',
   },
   {
     rut: '16940271-k',
@@ -29,6 +32,7 @@ const VALID_USERS: MockUserRecord[] = [
     fullName: 'María González Pérez',
     organization: 'SLEP Santiago Centro',
     estamento: 'docentes',
+    schoolId: 'martin-prado',
   },
   {
     rut: '19876543-0',
@@ -37,6 +41,7 @@ const VALID_USERS: MockUserRecord[] = [
     fullName: 'Ana Soto Vidal',
     organization: 'SLEP Santiago Centro',
     estamento: 'asistentes',
+    schoolId: 'costa-rica',
   },
 ];
 

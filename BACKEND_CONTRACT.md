@@ -163,39 +163,42 @@ El frontend actualmente opera mejor con una sesion servidor administrada por el 
 
 ## Requisitos de seguridad para el backend
 
-| Área | Requisito |
-|---|---|
-| **Rate limiting** | Mínimo: 5 intentos fallidos de login por RUT en 15 min. 3 intentos fallidos de OTP por sesión. 1 voto por usuario registrado. El frontend ya aplica estos límites a nivel de UI como primera línea; el backend es la fuente de verdad. |
-| **OTP** | Expiración: máximo 10 minutos. Un solo uso (invalidar tras verificación exitosa). Generación criptográficamente segura (`crypto.randomInt` o equivalente). |
-| **Voto único** | Verificar en BD que el `userId` no ha votado antes de registrar. La verificación debe ser atómica (transacción). |
-| **Logging de auditoría** | Registrar IP, timestamp y `userId` de cada evento: login intentado, OTP enviado, voto emitido. Sin registrar el valor del voto (secreto). |
-| **Sesion** | La sesion debe quedar asociada al votante autenticado y no depender de datos enviados por el cliente para inferir el padron. |
-| **HTTPS** | Obligatorio en producción. El frontend ya envía `Strict-Transport-Security: max-age=31536000; includeSubDomains; preload`. |
-| **CORS** | Configurar el origen exacto del frontend. No usar `*`. |
-| **Códigos de comprobante** | Generar `receiptCode` con UUID v4 o similar. El mock ya usa `crypto.randomUUID()` como referencia. |
-| **CSP** | El frontend implementa CSP nonce-based vía middleware Edge. Si el backend sirve el HTML directamente, debe propagar el nonce vía cabecera `x-nonce`. |
+Los controles marcados con ✅ ya están implementados en este repositorio. Los marcados con ⏳ son responsabilidad del backend del Servicio Local.
+
+| Área | Requisito | Estado |
+|---|---|---|
+| **Rate limiting** | 20 req/min por IP en todas las rutas API (middleware Edge). Límite de 5 intentos de login en la UI. Límite de 3 intentos OTP validado en servidor. | ✅ Frontend |
+| **OTP server-side** | Contador `otpAttempts` en `SessionRecord`; sesión destruida automáticamente al 3er fallo. | ✅ Frontend |
+| **OTP dinámico** | Generación y envío real por correo o SMS con expiración. El mock usa `otp` estático solo para demo. | ⏳ Backend SLEP |
+| **Validación formato** | OTP: `^\d{6}$` en servidor antes de consumir intentos. RUT: `^\d{7,8}-[\dkK]$` antes de consultar padrón. Email: máx 254 chars. | ✅ Frontend |
+| **Voto único** | `hasUserVoted()` + `markUserAsVoted()` sin `await` entre ellos (atómico en Node.js single-thread). En producción multi-instancia: transacción BD. | ✅ Frontend / ⏳ BD producción |
+| **Sesión post-voto** | `destroySession()` + `maxAge: 0` emitidos inmediatamente tras `submitVote` exitoso. | ✅ Frontend |
+| **Logging de auditoría** | Registrar IP, timestamp y `userId` de cada evento sin registrar el valor del voto. | ⏳ Backend SLEP |
+| **Sesión httpOnly** | Cookie `voting_session` con `HttpOnly`, `SameSite=Lax`, `Secure` (producción), `maxAge=600s`. | ✅ Frontend |
+| **HTTPS** | `Strict-Transport-Security: max-age=31536000; includeSubDomains; preload` activo. | ✅ Frontend |
+| **CORS** | Configurar origen exacto del frontend en el backend. No usar `*`. | ⏳ Backend SLEP |
+| **CSRF** | Sin token CSRF implícito en el mock de demo. Con cookie httpOnly en producción: cabecera `X-Requested-With` o doble-submit. | ⏳ Backend SLEP |
+| **CSP** | Nonce-based por request en middleware Edge. En producción sin `unsafe-inline` ni `unsafe-eval`. | ✅ Frontend |
 
 ---
 
 ## Items pendientes del equipo frontend antes de producción
 
-Los ítems ya completados en Fase 1b están marcados. Los restantes requieren integración con el backend real.
-
 | Archivo | Cambio | Estado |
 |---|---|---|
-| `src/app/page.tsx` | `handleRestart` limpia campos en blanco (sin pre-relleno) | ✅ Hecho |
-| `src/app/page.tsx` | Barra de progreso de 3 pasos reemplaza los step-chips por vista | ✅ Hecho |
-| `src/app/page.tsx` | El cliente consume `src/lib/api-client.ts` en lugar de importar `mock-api.ts` | ✅ Hecho |
-| `src/app/page.tsx` | Actualizar texto del banner a copy real (sin "datos simulados") | ⏳ Pendiente (Fase 3) |
-| `src/components/views/LoginView.tsx` | Chip de hint eliminado | ✅ Hecho |
-| `src/components/views/OtpView.tsx` | Chip de hint eliminado | ✅ Hecho |
-| `src/components/views/VotingView.tsx` | Mostrar `role` y `slogan` del candidato en cada tarjeta | ✅ Hecho |
-| `src/app/api/**` | Mantener el BFF de Next.js como capa estable frente al backend del Servicio Local | ✅ Hecho |
-| `src/lib/mock-api.ts` | Reemplazar el mock local por adaptador o backend real | ⏳ Pendiente (Fase 3) |
-| `src/lib/server-session.ts` | Sustituir store en memoria por infraestructura real | ⏳ Pendiente (Fase 3) |
-| `src/types/index.ts` | Mantener en cliente solo el modelo publico del votante | ✅ Hecho |
-| `next.config.mjs` | CSP movida al middleware con nonce | ✅ Hecho |
-| `next.config.mjs` | HSTS agregado | ✅ Hecho |
+| `src/app/page.tsx` | Cliente consume `src/lib/api-client.ts` sin importar `mock-api.ts` | ✅ Hecho |
+| `src/app/page.tsx` | Expiración por inactividad en estados `otp` y `vote` | ✅ Hecho |
+| `src/app/api/**` | Validación formato RUT y OTP en servidor antes de consultar padrón | ✅ Hecho |
+| `src/lib/server-session.ts` | Contador OTP server-side con destrucción automática de sesión | ✅ Hecho |
+| `src/app/api/votes/route.ts` | Voto atómico (check + mark sin await intermedio) | ✅ Hecho |
+| `src/app/api/votes/route.ts` | Sesión destruida inmediatamente tras voto exitoso | ✅ Hecho |
+| `src/lib/server-session.ts` | Store persistido en `globalThis` para sobrevivir Hot Reload | ✅ Hecho |
+| `src/types/index.ts` | Modelo público `User` sin `rut`, `email`, `otp` | ✅ Hecho |
+| `next.config.mjs` | CSP nonce-based en middleware, HSTS, CORP | ✅ Hecho |
+| `src/app/page.tsx` | Eliminar texto de credenciales visibles en UI (antes de demo pública) | ⏳ Pendiente |
+| `src/lib/mock-api.ts` | Reemplazar mock por adaptador conectado al backend real del SLEP | ⏳ Pendiente (cada SLEP) |
+| `src/lib/server-session.ts` | Sustituir store en memoria por Redis, KV o BD | ⏳ Pendiente (cada SLEP) |
+| CSRF | Agregar protección CSRF en `POST /api/votes` y `POST /api/auth/*` | ⏳ Pendiente con backend real |
 
 ---
 

@@ -2,6 +2,7 @@ import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 
 import { getCandidateById, getMockUserByRut, submitVote } from '@/lib/mock-api';
+import { recordVote } from '@/lib/metrics-store';
 import {
   destroySession,
   getSession,
@@ -59,6 +60,7 @@ export async function POST(request: Request) {
       );
     }
     markUserAsVoted(user.rut);
+    recordVote(candidateId, user.estamento, user.schoolId);
 
     const result = await submitVote(candidateId);
 

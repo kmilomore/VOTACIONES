@@ -181,9 +181,30 @@ Cada transicion se produce solo si la llamada a las rutas API del servidor resue
 
 ## Alcance de seguridad
 
-Las medidas implementadas en este repositorio endurecen el frontend y su superficie web, pero no reemplazan los controles de integridad electoral que deben existir en backend. En particular, el frontend no puede garantizar por si solo autenticacion fuerte, OTP de un solo uso, voto unico ni auditoria transaccional.
+Este repositorio entrega el frontend blindado. Los controles implementados son verificables directamente en el código.
 
-La mejora ya aplicada en esta base es que el navegador no recibe OTP, RUT ni email del votante autenticado como parte del modelo `User`. Esos datos quedan en servidor y el cliente solo recibe la informacion necesaria para renderizar la experiencia.
+**Controles en el cliente** (navegador nunca recibe): RUT, correo, OTP ni reglas de elegibilidad. El modelo público `User` solo contiene `fullName`, `organization` y `estamento`.
+
+**Controles en servidor implementados y activos:**
+
+| Control | Archivo | Detalle |
+|---|---|---|
+| Límite OTP server-side | `server-session.ts` | Contador `otpAttempts` en `SessionRecord` — sesión destruida al llegar a 3 fallos |
+| Validación formato OTP | `verify-otp/route.ts` | Rechaza con `400` si no es exactamente 6 dígitos antes de consumir un intento |
+| Validación formato RUT | `verify-credentials/route.ts` | Rechaza con mensaje genérico si el formato no es `\d{7,8}-[\dkK]` |
+| Voto atómico | `votes/route.ts` | `hasUserVoted()` + `markUserAsVoted()` sin `await` entre ellos |
+| Sesión destruida post-voto | `votes/route.ts` | `destroySession()` + `maxAge: 0` inmediatamente tras votar |
+| Filtrado de padrón | `candidates/route.ts` | Estamento se lee desde la sesión servidor, no del cliente |
+| Rate limiting por IP | `middleware.ts` | 20 req/min por IP — `429` con `Retry-After: 60` |
+| CSP nonce por request | `middleware.ts` | Nonce criptográfico único; en producción sin `unsafe-inline` ni `unsafe-eval` |
+| Sesión httpOnly | Todos los routes | Flags `HttpOnly`, `SameSite=Lax`, `Secure` (producción), `maxAge=600s` |
+
+**Controles que quedan en el SLEP al integrar backend real:**
+- OTP dinámico con expiración real (correo o SMS)
+- Voto único con transacción atomica en BD
+- Persistencia de sesión (Redis o equivalente)
+- Protección CSRF en mutaciones POST con cookie
+- Auditoría de eventos sin exponer la preferencia del votante en logs
 
 ## Seguridad
 
@@ -198,6 +219,7 @@ La mejora ya aplicada en esta base es que el navegador no recibe OTP, RUT ni ema
 | `Referrer-Policy` | `strict-origin-when-cross-origin` | Fuga de URL |
 | `Permissions-Policy` | `camera=(), microphone=(), geolocation=(), payment=(), usb=(), serial=(), display-capture=()` | APIs de hardware |
 | `Cross-Origin-Opener-Policy` | `same-origin` | Spectre / window.opener |
+| `Cross-Origin-Resource-Policy` | `same-origin` | Embebido de recursos entre orígenes |
 | `Cross-Origin-Resource-Policy` | `same-origin` | Embedding de recursos |
 
 ### Rate limiting

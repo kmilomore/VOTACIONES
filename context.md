@@ -133,8 +133,20 @@ La aplicacion utiliza Route Handlers de Next.js como frontera servidor:
 
 - Usa cookie httpOnly `voting_session`.
 - Mantiene estado temporal de autenticacion y OTP validado.
-- Implementa una proteccion basica de voto unico para la demo.
-- Usa memoria de proceso, por lo que no debe considerarse lista para produccion.
+- `SessionRecord` incluye `otpAttempts: number` — la sesión se destruye al llegar a 3 intentos fallidos de OTP.
+- El store se persiste en `globalThis` para sobrevivir recargas de módulos en el Hot Reload de desarrollo.
+- Usa memoria de proceso, por lo que no debe considerarse lista para producción multi-instancia.
+
+### Controles server-side implementados en código
+
+| Control | Archivo | Descripción |
+|---|---|---|
+| Límite OTP servidor | `server-session.ts` + `verify-otp/route.ts` | Contador `otpAttempts` en sesión; destruye sesión al 3er fallo |
+| Validación formato OTP | `verify-otp/route.ts` | `400` si el body no es exactamente 6 dígitos numéricos |
+| Validación formato RUT | `verify-credentials/route.ts` | `401` genérico si el formato no es `\d{7,8}-[\dkK]` |
+| Voto atómico | `votes/route.ts` | `hasUserVoted()` + `markUserAsVoted()` sin `await` entre ellos |
+| Sesión destruida post-voto | `votes/route.ts` | `destroySession()` + cookie `maxAge: 0` inmediatamente tras `submitVote` |
+| Filtrado de padrón servidor | `candidates/route.ts` | Estamento se lee de la sesión, no del cliente |
 
 ### Mock API (`src/lib/mock-api.ts`)
 
